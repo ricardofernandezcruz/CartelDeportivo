@@ -1,19 +1,11 @@
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
 
-export default auth((req) => {
-  const isAdminRoute =
-    req.nextUrl.pathname.startsWith("/admin") &&
-    !req.nextUrl.pathname.startsWith("/admin/login");
-
-  if (isAdminRoute && !req.auth) {
-    const login = new URL("/admin/login", req.nextUrl.origin);
-    login.searchParams.set("callbackUrl", req.nextUrl.pathname);
-    return NextResponse.redirect(login);
-  }
-
-  return NextResponse.next();
-});
+/**
+ * Middleware ligero: solo auth.config (sin Prisma).
+ * Evita el límite de 1 MB de Edge Functions en Vercel Hobby.
+ */
+export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: ["/admin/:path*"],
