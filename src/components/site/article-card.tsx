@@ -38,9 +38,9 @@ export function ArticleCard({
               priority
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-zinc-900" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--cartel-red)] to-[var(--cartel-blue)]" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--cartel-blue)]/90 via-[var(--cartel-blue)]/40 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
             <Badge className="mb-3 bg-primary text-primary-foreground">{article.category.name}</Badge>
             <h2 className="font-heading text-3xl font-black uppercase leading-none tracking-tight text-white sm:text-4xl lg:text-5xl">

@@ -106,7 +106,7 @@ export function ImageUpload({
           </div>
         )}
         {value && !uploading && (
-          <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 to-transparent pb-3 opacity-0 transition hover:opacity-100">
+          <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-[var(--cartel-blue)]/70 to-transparent pb-3 opacity-0 transition hover:opacity-100">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-foreground">
               <Upload className="h-3.5 w-3.5" />
               Cambiar imagen

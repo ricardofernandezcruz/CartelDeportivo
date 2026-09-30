@@ -11,7 +11,7 @@ export function BreakingTicker({ items }: { items: ArticleCardData[] }) {
   return (
     <div className="overflow-hidden border-y border-[var(--cartel-red)]/30 bg-[var(--cartel-red)] text-white">
       <div className="mx-auto flex max-w-7xl items-stretch">
-        <span className="flex shrink-0 items-center bg-black/25 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em]">
+        <span className="flex shrink-0 items-center bg-[var(--cartel-blue)] px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em]">
           Última hora
         </span>
         <div className="relative flex-1 overflow-hidden py-2">

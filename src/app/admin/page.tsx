@@ -66,16 +66,16 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--cartel-dark)] via-[#1f1f22] to-[var(--cartel-blue)] p-6 text-white shadow-lg sm:p-8">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--cartel-red)]/30 blur-3xl" />
-        <div className="absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-[var(--cartel-blue)]/40 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--cartel-blue)] via-[#0a6bb8] to-[var(--cartel-red)] p-6 text-white shadow-lg sm:p-8">
+        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/15 blur-3xl" />
+        <div className="absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-[var(--cartel-red)]/35 blur-3xl" />
         <div className="relative flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-xl">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/60">{greeting}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/70">{greeting}</p>
             <h1 className="mt-2 font-heading text-3xl font-black uppercase tracking-tight sm:text-4xl">
               Hola, {firstName}
             </h1>
-            <p className="mt-3 text-sm leading-relaxed text-white/75 sm:text-base">
+            <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">
               Escribe, sube fotos desde tu PC y publica. La portada, el SEO y la búsqueda se actualizan solos.
             </p>
           </div>
@@ -83,7 +83,7 @@ export default async function AdminDashboardPage() {
             href="/admin/articulos/nuevo"
             className={cn(
               buttonVariants({ size: "lg" }),
-              "bg-white text-[var(--cartel-dark)] hover:bg-white/90",
+              "bg-white text-[var(--cartel-blue)] hover:bg-white/90",
             )}
           >
             <FilePlus2 className="h-4 w-4" />

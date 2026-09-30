@@ -21,11 +21,11 @@ export function HeroSlideMedia({ src, title }: { src?: string | null; title: str
         />
       ) : (
         <div
-          className="absolute inset-0 bg-gradient-to-br from-[var(--cartel-red)] via-[#1a1a1a] to-[var(--cartel-blue)]"
+          className="absolute inset-0 bg-gradient-to-br from-[var(--cartel-red)] to-[var(--cartel-blue)]"
           aria-hidden
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[var(--cartel-blue)]/45 via-transparent to-transparent" />
       <span className="sr-only">{title}</span>
     </>
   );

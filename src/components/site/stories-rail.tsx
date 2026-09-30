@@ -29,7 +29,7 @@ export function StoriesRail({ items, title = "Historias" }: { items: ArticleCard
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-b from-[var(--cartel-blue)] to-[var(--cartel-red)]" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--cartel-blue)]/95 via-[var(--cartel-blue)]/25 to-transparent" />
                 <p className="absolute inset-x-0 bottom-0 line-clamp-3 p-2 text-[11px] font-bold leading-tight text-white">
                   {item.title}
                 </p>
