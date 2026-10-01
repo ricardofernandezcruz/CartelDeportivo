@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 type IconProps = { className?: string };
 
-function FacebookIcon({ className }: IconProps) {
+export function FacebookIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
       <path d="M14 8.25h2.25V5.5H14c-1.93 0-3.5 1.57-3.5 3.5v1.75H8.25V13.5H10.5V20h2.75v-6.5h2.1l.65-2.75h-2.75V9c0-.41.34-.75.75-.75Z" />
@@ -10,7 +10,7 @@ function FacebookIcon({ className }: IconProps) {
   );
 }
 
-function XIcon({ className }: IconProps) {
+export function XIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
       <path d="M17.6 4H20l-6.2 7.1L20.9 20h-5.4l-4.2-5.5L6.2 20H3.8l6.6-7.6L3.2 4h5.5l3.8 5.1L17.6 4Zm-1 14.4h1.5L7.5 5.5H5.9l10.7 12.9Z" />
@@ -18,7 +18,7 @@ function XIcon({ className }: IconProps) {
   );
 }
 
-function InstagramIcon({ className }: IconProps) {
+export function InstagramIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
       <path d="M12 7.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2Zm0 7.9a3.1 3.1 0 1 1 0-6.2 3.1 3.1 0 0 1 0 6.2Z" />
@@ -28,7 +28,7 @@ function InstagramIcon({ className }: IconProps) {
   );
 }
 
-function YoutubeIcon({ className }: IconProps) {
+export function YoutubeIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
       <path d="M21.6 7.2a2.7 2.7 0 0 0-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3A2.7 2.7 0 0 0 2.4 7.2 28.4 28.4 0 0 0 2 12a28.4 28.4 0 0 0 .4 4.8 2.7 2.7 0 0 0 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3a2.7 2.7 0 0 0 1.9-1.9A28.4 28.4 0 0 0 22 12a28.4 28.4 0 0 0-.4-4.8ZM10 15.2V8.8L15.5 12 10 15.2Z" />
@@ -36,7 +36,7 @@ function YoutubeIcon({ className }: IconProps) {
   );
 }
 
-function TikTokIcon({ className }: IconProps) {
+export function TikTokIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
       <path d="M19.6 8.3a6.4 6.4 0 0 1-3.7-1.2v7.1a5.9 5.9 0 1 1-5.9-5.9c.2 0 .5 0 .7.05v2.9a3 3 0 1 0 2.1 2.9V2.5h2.8a6.4 6.4 0 0 0 4 3.8v2Z" />
