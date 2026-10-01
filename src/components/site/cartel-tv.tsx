@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play, Share2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   CARTEL_TV_CLIPS,
@@ -19,24 +18,6 @@ import { cn } from "@/lib/utils";
 
 const PER_PAGE = 3;
 
-function TvWordmark() {
-  return (
-    <div className="flex items-center justify-center gap-2">
-      <div className="flex overflow-hidden rounded-md shadow-md ring-1 ring-black/10">
-        <span className="bg-[var(--cartel-red)] px-3 py-1.5 font-heading text-sm font-black uppercase tracking-wide text-white sm:text-base">
-          Cartel Deportivo
-        </span>
-        <span className="bg-[var(--cartel-blue)] px-2.5 py-1.5 font-heading text-sm font-black uppercase tracking-wide text-white sm:text-base">
-          TV
-        </span>
-      </div>
-      <Badge className="bg-white/15 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-white/20">
-        En vivo · Shorts
-      </Badge>
-    </div>
-  );
-}
-
 async function shareClip(clip: CartelTvClip) {
   const url = youtubeWatchUrl(clip.youtubeId);
   try {
@@ -45,7 +26,7 @@ async function shareClip(clip: CartelTvClip) {
       return;
     }
   } catch {
-    /* usuario canceló */
+    /* cancelado */
   }
   try {
     await navigator.clipboard.writeText(url);
@@ -68,46 +49,50 @@ export function CartelTvSection({ clips = CARTEL_TV_CLIPS }: { clips?: CartelTvC
   }, [index]);
 
   useEffect(() => {
-    const nextPage = Math.floor(index / PER_PAGE);
-    setPage(nextPage);
+    setPage(Math.floor(index / PER_PAGE));
   }, [index]);
 
   if (!current) return null;
 
   return (
     <section className="relative isolate overflow-hidden">
-      {/* Fondo partido blanco / rojo — mejorado con degradado */}
       <div className="absolute inset-0 bg-[#f4f6f8]" />
-      <div className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-b from-[var(--cartel-red)] to-[#c40808]" />
-      <div className="pointer-events-none absolute inset-x-0 top-1/3 h-40 bg-gradient-to-b from-transparent to-[var(--cartel-red)]/40" />
+      <div className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-b from-[var(--cartel-red)] to-[#c40808]" />
 
-      <div className="relative mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:py-14">
+      <div className="relative mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
+        {/* Logo oficial */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-          className="mb-8"
+          className="mb-6 flex justify-center"
         >
-          <TvWordmark />
+          <Image
+            src="/brand/cartel-tv-logo.png"
+            alt="Cartel Deportivo TV"
+            width={350}
+            height={100}
+            className="h-auto w-[220px] drop-shadow-md sm:w-[280px]"
+            priority
+          />
         </motion.div>
 
-        {/* Escenario principal */}
+        {/* Player principal — 16:9 compacto */}
         <motion.div
-          initial={{ opacity: 0, y: 18 }}
+          initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.45, delay: 0.05 }}
-          className="overflow-hidden rounded-2xl border border-white/20 bg-[var(--cartel-dark)] shadow-2xl shadow-black/30"
+          transition={{ delay: 0.05 }}
+          className="overflow-hidden rounded-2xl border border-white/25 bg-[var(--cartel-dark)] shadow-2xl shadow-black/25"
         >
-          <div className="relative mx-auto aspect-[9/14] w-full max-w-md bg-black sm:aspect-[9/13] sm:max-w-lg">
+          <div className="relative aspect-video w-full bg-black">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.id}
-                initial={{ opacity: 0.4 }}
+                initial={{ opacity: 0.35 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.2 }}
                 className="absolute inset-0"
               >
                 {playing ? (
@@ -125,18 +110,18 @@ export function CartelTvSection({ clips = CARTEL_TV_CLIPS }: { clips?: CartelTvC
                       alt=""
                       fill
                       className="object-cover"
-                      sizes="(max-width:640px) 100vw, 512px"
+                      sizes="(max-width:1024px) 100vw, 960px"
                       priority
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/70" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/65" />
                     <button
                       type="button"
                       onClick={() => setPlaying(true)}
                       className="absolute inset-0 flex items-center justify-center"
                       aria-label="Reproducir video"
                     >
-                      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cartel-red)] text-white shadow-lg ring-4 ring-white/25 transition hover:scale-105 hover:bg-[var(--cartel-red)]/90">
-                        <Play className="ml-0.5 h-7 w-7 fill-current" />
+                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--cartel-red)] text-white shadow-lg ring-4 ring-white/20 transition hover:scale-105 sm:h-16 sm:w-16">
+                        <Play className="ml-0.5 h-6 w-6 fill-current sm:h-7 sm:w-7" />
                       </span>
                     </button>
                   </>
@@ -144,24 +129,22 @@ export function CartelTvSection({ clips = CARTEL_TV_CLIPS }: { clips?: CartelTvC
               </motion.div>
             </AnimatePresence>
 
-            {/* Overlay superior */}
             {!playing && (
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start gap-3 p-4">
-                <Avatar size="lg" className="ring-2 ring-white/40">
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start gap-3 p-3 sm:p-4">
+                <Avatar className="size-9 ring-2 ring-white/35 sm:size-10">
                   <AvatarImage src={current.avatarUrl} alt={current.author} />
-                  <AvatarFallback className="bg-[var(--cartel-blue)] text-white">CD</AvatarFallback>
+                  <AvatarFallback className="bg-[var(--cartel-blue)] text-xs text-white">CD</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 pt-0.5">
-                  <p className="line-clamp-2 text-sm font-semibold leading-snug text-white drop-shadow">
+                  <p className="line-clamp-1 text-sm font-semibold text-white drop-shadow sm:line-clamp-2">
                     {current.title}
                   </p>
-                  <p className="mt-1 text-xs text-white/75">{current.author}</p>
+                  <p className="mt-0.5 text-[11px] text-white/75">{current.author}</p>
                 </div>
               </div>
             )}
 
-            {/* Overlay inferior */}
-            <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-3 p-4">
+            <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-3 p-3 sm:p-4">
               <Button
                 type="button"
                 variant="ghost"
@@ -188,35 +171,31 @@ export function CartelTvSection({ clips = CARTEL_TV_CLIPS }: { clips?: CartelTvC
           </div>
         </motion.div>
 
-        {/* Carrusel de clips */}
-        <div className="mt-8 text-white">
-          <h3 className="mb-4 line-clamp-2 max-w-3xl font-heading text-lg font-black uppercase leading-tight tracking-tight sm:text-xl">
+        {/* Carrusel simétrico */}
+        <div className="mt-7 text-white">
+          <h3 className="mb-4 line-clamp-2 min-h-[2.75rem] font-heading text-base font-black uppercase leading-tight tracking-tight sm:min-h-[3.25rem] sm:text-xl">
             {current.title}
           </h3>
 
-          <div className="relative">
+          <div className="relative px-1 sm:px-2">
             <button
               type="button"
               aria-label="Anterior"
-              className="absolute -left-2 top-1/3 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur hover:bg-white/25 sm:-left-3"
-              onClick={() => {
-                setPage((p) => (p - 1 + pageCount) % pageCount);
-              }}
+              className="absolute -left-1 top-[28%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur hover:bg-black/40 sm:-left-2 sm:h-9 sm:w-9"
+              onClick={() => setPage((p) => (p - 1 + pageCount) % pageCount)}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               type="button"
               aria-label="Siguiente"
-              className="absolute -right-2 top-1/3 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur hover:bg-white/25 sm:-right-3"
-              onClick={() => {
-                setPage((p) => (p + 1) % pageCount);
-              }}
+              className="absolute -right-1 top-[28%] z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur hover:bg-black/40 sm:-right-2 sm:h-9 sm:w-9"
+              onClick={() => setPage((p) => (p + 1) % pageCount)}
             >
               <ChevronRight className="h-5 w-5" />
             </button>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-3">
               <AnimatePresence mode="popLayout">
                 {pageClips.map((clip, i) => {
                   const absoluteIndex = page * PER_PAGE + i;
@@ -229,13 +208,13 @@ export function CartelTvSection({ clips = CARTEL_TV_CLIPS }: { clips?: CartelTvC
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.25 }}
+                      transition={{ duration: 0.2 }}
                       onClick={() => setIndex(absoluteIndex)}
-                      className="group text-left"
+                      className="group flex h-full flex-col text-left"
                     >
                       <div
                         className={cn(
-                          "relative aspect-video overflow-hidden rounded-xl bg-black/30 transition",
+                          "relative aspect-video w-full shrink-0 overflow-hidden rounded-xl bg-black/30 transition",
                           active
                             ? "ring-2 ring-white shadow-lg shadow-black/20"
                             : "ring-1 ring-white/20 hover:ring-white/50",
@@ -250,12 +229,13 @@ export function CartelTvSection({ clips = CARTEL_TV_CLIPS }: { clips?: CartelTvC
                         />
                         <div className="absolute inset-0 bg-black/35" />
                         <span className="absolute inset-0 flex items-center justify-center">
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[var(--cartel-red)] shadow">
-                            <Play className="ml-0.5 h-4 w-4 fill-current" />
+                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[var(--cartel-red)] shadow">
+                            <Play className="ml-0.5 h-3.5 w-3.5 fill-current" />
                           </span>
                         </span>
                       </div>
-                      <p className="mt-2 line-clamp-2 text-xs font-semibold leading-snug text-white/95 sm:text-[13px]">
+                      {/* Altura fija → filas simétricas */}
+                      <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-xs font-semibold leading-snug text-white/95 sm:min-h-[2.6rem] sm:text-[13px]">
                         {clip.title}
                       </p>
                     </motion.button>
@@ -265,7 +245,7 @@ export function CartelTvSection({ clips = CARTEL_TV_CLIPS }: { clips?: CartelTvC
             </div>
           </div>
 
-          <div className="mt-6 flex items-center justify-center gap-2">
+          <div className="mt-5 flex items-center justify-center gap-2">
             {Array.from({ length: pageCount }).map((_, i) => (
               <button
                 key={i}
