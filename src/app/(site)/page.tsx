@@ -2,8 +2,10 @@ import Link from "next/link";
 import { AdSlot } from "@/components/site/ad-slot";
 import { ArticleCard } from "@/components/site/article-card";
 import { BreakingTicker } from "@/components/site/breaking-ticker";
+import { CartelTvSection } from "@/components/site/cartel-tv";
 import { HeroCarousel } from "@/components/site/hero-carousel";
 import { NewsletterBlock } from "@/components/site/newsletter-block";
+import { OpinionsSection } from "@/components/site/opinions-section";
 import { SectionTitle } from "@/components/site/section-title";
 import { SponsorBanner } from "@/components/site/sponsor-banner";
 import { LidomStandings } from "@/components/site/lidom-standings";
@@ -48,8 +50,12 @@ export default async function HomePage() {
   ]);
 
   const [featPrimary, featSecondary, ...featRest] = destacadas;
-  const opinionItems =
-    opinions.length > 0 ? opinions : beisbol.slice(0, 4);
+  const opinionPool = [
+    ...opinions,
+    ...beisbol.filter((a) => !opinions.some((o) => o.id === a.id)),
+    ...futbol.filter((a) => !opinions.some((o) => o.id === a.id)),
+  ];
+  const opinionItems = opinionPool.slice(0, 4);
   const masDeporte = [...baloncesto, ...beisbol.slice(0, 1)].slice(0, 4);
 
   return (
@@ -129,17 +135,22 @@ export default async function HomePage() {
             </div>
           </aside>
         </section>
+      </div>
 
-        <section className="mt-10">
-          <SectionTitle title="Opiniones" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {opinionItems.map((a) => (
-              <ArticleCard key={a.id} article={a} variant="opinion" />
-            ))}
-          </div>
-        </section>
+      <CartelTvSection />
 
-        <section className="mt-10">
+      <OpinionsSection
+        items={opinionItems.map((a) => ({
+          slug: a.slug,
+          title: a.title,
+          publishedAt: a.publishedAt,
+          category: { name: a.category.name, slug: a.category.slug },
+          author: { name: a.author.name, avatarUrl: a.author.avatarUrl },
+        }))}
+      />
+
+      <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+        <section className="mt-4">
           <SectionTitle title="Más deporte" href="/categoria/baloncesto" />
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {masDeporte.map((a) => (

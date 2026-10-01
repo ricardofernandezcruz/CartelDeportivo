@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import {
   FacebookIcon,
   InstagramIcon,
+  TikTokIcon,
   XIcon,
   YoutubeIcon,
 } from "@/components/site/social-icons";
@@ -13,6 +14,7 @@ const footerSocial = [
   { label: "X", href: "https://x.com/", Icon: XIcon },
   { label: "Instagram", href: "https://www.instagram.com/", Icon: InstagramIcon },
   { label: "YouTube", href: "https://www.youtube.com/", Icon: YoutubeIcon },
+  { label: "TikTok", href: "https://www.tiktok.com/", Icon: TikTokIcon },
 ] as const;
 
 function BrandMark({ className = "" }: { className?: string }) {
@@ -57,11 +59,11 @@ export function SiteFooter() {
             <div className="flex flex-1 flex-col justify-center gap-8 border-b border-[#e5e7eb] p-8 sm:p-10 lg:p-12">
               <div className="flex items-center gap-3">
                 <Image
-                  src="https://i.pravatar.cc/150?u=pappy-perez"
+                  src="/brand/pappy-perez.png"
                   alt="Pappy Pérez"
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 rounded-full object-cover"
+                  width={96}
+                  height={96}
+                  className="h-12 w-12 rounded-full object-cover object-top"
                 />
                 <AccentArcs />
                 <div className="min-w-0">
@@ -91,8 +93,8 @@ export function SiteFooter() {
               </Link>
             </div>
 
-            {/* Grid de redes — 4 celdas */}
-            <div className="grid grid-cols-4">
+            {/* Grid de redes */}
+            <div className="grid grid-cols-5">
               {footerSocial.map(({ label, href, Icon }, i) => (
                 <a
                   key={label}

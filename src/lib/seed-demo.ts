@@ -102,7 +102,7 @@ export async function seedDatabase() {
         name: "Pappy Pérez",
         slug: "pappy-perez",
         bio: "Director y cronista deportivo. Cartel Deportivo se edita desde Santiago de los Caballeros bajo su dirección.",
-        avatarUrl: "https://i.pravatar.cc/150?u=pappy-perez",
+        avatarUrl: "/brand/pappy-perez.png",
       },
       {
         name: "Tuto Tavárez",
@@ -392,6 +392,32 @@ export async function seedDatabase() {
         {
           type: "p",
           text: "Lawrence trabajó en el campo con intensidad y se mostró disponible para el rol que el cuerpo técnico le asigne. En Águilas, cada práctica cuenta; el margen de error es corto y la competencia por cupos, feroz.",
+        },
+      ]),
+    },
+    {
+      title: "Correcta decisión…",
+      slug: "correcta-decision-baloncesto",
+      excerpt:
+        "Columna: por qué el cambio de estrategia en el banquillo local era inevitable y qué implica para el resto de la temporada.",
+      categoryId: cat.baloncesto.id,
+      authorId: authors[1].id,
+      featured: false,
+      heroImageUrl: IMG.basket,
+      viewCount: 221,
+      tagIds: [tag.opinion.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "Había que decidir. El equipo acumulaba derrotas evitables, el vestuario pedía otra voz y la afición, paciencia agotada. El cambio no es un capricho: es una lectura fría del momento.",
+        },
+        {
+          type: "quote",
+          text: "En el baloncesto, posponer una decisión difícil solo multiplica el costo.",
+        },
+        {
+          type: "p",
+          text: "Ahora toca sostener el rumbo. Si la nueva dirección logra disciplina defensiva y claridad ofensiva, la temporada todavía tiene margen. Si no, al menos se habrá dejado de fingir que todo estaba bien.",
         },
       ]),
     },
