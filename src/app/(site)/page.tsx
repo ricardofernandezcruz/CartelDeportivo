@@ -6,6 +6,7 @@ import { HeroCarousel } from "@/components/site/hero-carousel";
 import { NewsletterBlock } from "@/components/site/newsletter-block";
 import { SectionTitle } from "@/components/site/section-title";
 import { SponsorBanner } from "@/components/site/sponsor-banner";
+import { LidomStandings } from "@/components/site/lidom-standings";
 import { StoriesRail } from "@/components/site/stories-rail";
 import {
   getArticlesByCategory,
@@ -15,6 +16,7 @@ import {
   getPublishedArticles,
   getStoryArticles,
 } from "@/lib/articles";
+import { getLidomStandings } from "@/lib/fetch-lidom-standings";
 
 export const revalidate = 60;
 
@@ -30,6 +32,7 @@ export default async function HomePage() {
     baloncesto,
     opinions,
     latest,
+    lidom,
   ] = await Promise.all([
     getFeaturedArticles(6),
     getPublishedArticles(10),
@@ -41,6 +44,7 @@ export default async function HomePage() {
     getArticlesByCategory("baloncesto", 3),
     getOpinionArticles(4),
     getPublishedArticles(5),
+    getLidomStandings(),
   ]);
 
   const [featPrimary, featSecondary, ...featRest] = destacadas;
@@ -106,6 +110,8 @@ export default async function HomePage() {
           </div>
 
           <aside className="space-y-6 lg:col-span-4">
+            <LidomStandings data={lidom} />
+
             <div className="rounded-xl border border-border bg-muted/20 p-4">
               <SectionTitle title="Más vistas de la semana" className="mb-3" />
               {mostViewed.map((a) => (

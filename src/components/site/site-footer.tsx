@@ -29,6 +29,11 @@ export function SiteFooter() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link href="/posiciones" className="hover:text-white hover:underline">
+                  Posiciones LIDOM
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
