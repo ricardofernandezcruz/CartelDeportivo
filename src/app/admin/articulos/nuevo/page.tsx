@@ -16,7 +16,7 @@ export default async function NewArticlePage() {
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Redacción</p>
         <h1 className="font-heading text-3xl font-black uppercase tracking-tight">Nueva noticia</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Escribe el titular, sube la foto desde tu PC y publica. El resto lo hace el sistema.
+          El asistente te dice qué falta. Puedes publicar ahora o programar fecha y hora: el sistema la sube solo.
         </p>
       </div>
       <ArticleEditorForm

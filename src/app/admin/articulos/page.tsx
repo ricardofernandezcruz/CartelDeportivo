@@ -1,11 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { CalendarClock, Plus } from "lucide-react";
 import { getAdminArticles } from "@/lib/articles";
+import { publishDueArticles } from "@/lib/publish-scheduled";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { ArticleStatus } from "@prisma/client";
 
 const statusLabel: Record<string, string> = {
   PUBLISHED: "Publicada",
@@ -14,8 +16,29 @@ const statusLabel: Record<string, string> = {
   SCHEDULED: "Programada",
 };
 
-export default async function AdminArticlesPage() {
-  const articles = await getAdminArticles();
+const filters: { key: string; label: string; status?: ArticleStatus }[] = [
+  { key: "all", label: "Todas" },
+  { key: "PUBLISHED", label: "Publicadas", status: "PUBLISHED" },
+  { key: "SCHEDULED", label: "Programadas", status: "SCHEDULED" },
+  { key: "DRAFT", label: "Borradores", status: "DRAFT" },
+  { key: "REVIEW", label: "Revisión", status: "REVIEW" },
+];
+
+function formatSchedule(date: Date) {
+  return new Intl.DateTimeFormat("es-DO", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+type PageProps = { searchParams: Promise<{ estado?: string }> };
+
+export default async function AdminArticlesPage({ searchParams }: PageProps) {
+  await publishDueArticles().catch(() => null);
+
+  const { estado } = await searchParams;
+  const active = filters.find((f) => f.key === estado) ?? filters[0];
+  const articles = await getAdminArticles(active.status);
 
   return (
     <div className="space-y-6">
@@ -24,7 +47,7 @@ export default async function AdminArticlesPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Contenido</p>
           <h1 className="font-heading text-3xl font-black uppercase tracking-tight">Noticias</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {articles.length} piezas · haz clic para editar
+            {articles.length} piezas · programa o publica con un clic
           </p>
         </div>
         <Link
@@ -34,6 +57,26 @@ export default async function AdminArticlesPage() {
           <Plus className="h-4 w-4" />
           Nueva noticia
         </Link>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {filters.map((f) => {
+          const isActive = f.key === active.key;
+          return (
+            <Link
+              key={f.key}
+              href={f.key === "all" ? "/admin/articulos" : `/admin/articulos?estado=${f.key}`}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition",
+                isActive
+                  ? "border-[var(--cartel-blue)] bg-[var(--cartel-blue)] text-white"
+                  : "border-border bg-white text-muted-foreground hover:border-[var(--cartel-blue)]/40 hover:text-[var(--cartel-blue)] dark:bg-card",
+              )}
+            >
+              {f.label}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="grid gap-3">
@@ -67,7 +110,10 @@ export default async function AdminArticlesPage() {
                 </Badge>
                 <Badge
                   variant={article.status === "PUBLISHED" ? "default" : "secondary"}
-                  className={cn(article.status === "PUBLISHED" && "bg-[var(--cartel-red)]")}
+                  className={cn(
+                    article.status === "PUBLISHED" && "bg-[var(--cartel-red)]",
+                    article.status === "SCHEDULED" && "bg-violet-600 text-white hover:bg-violet-600",
+                  )}
                 >
                   {statusLabel[article.status] ?? article.status}
                 </Badge>
@@ -84,6 +130,12 @@ export default async function AdminArticlesPage() {
                 {article.author.name} · {formatRelativeDate(article.updatedAt)}
                 {article.viewCount > 0 && ` · ${article.viewCount} vistas`}
               </p>
+              {article.status === "SCHEDULED" && article.scheduledFor && (
+                <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--cartel-blue)]">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Sale {formatSchedule(article.scheduledFor)}
+                </p>
+              )}
             </div>
           </Link>
         ))}
@@ -91,8 +143,8 @@ export default async function AdminArticlesPage() {
 
       {articles.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-          <p className="font-semibold">Aún no hay noticias</p>
-          <p className="mt-1 text-sm text-muted-foreground">Crea la primera desde el botón de arriba.</p>
+          <p className="font-semibold">No hay noticias en este filtro</p>
+          <p className="mt-1 text-sm text-muted-foreground">Cambia el filtro o crea una nueva.</p>
         </div>
       )}
     </div>

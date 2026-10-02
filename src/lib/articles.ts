@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { ArticleStatus, Prisma } from "@prisma/client";
+import { publishDueArticles } from "@/lib/publish-scheduled";
 
 export const articleListInclude = {
   category: true,
@@ -8,6 +9,9 @@ export const articleListInclude = {
 } satisfies Prisma.ArticleInclude;
 
 export async function getPublishedArticles(limit = 20) {
+  // Red de seguridad si el cron aún no corrió
+  await publishDueArticles().catch(() => null);
+
   return prisma.article.findMany({
     where: { status: "PUBLISHED", publishedAt: { lte: new Date() } },
     orderBy: { publishedAt: "desc" },

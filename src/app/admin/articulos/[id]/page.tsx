@@ -41,6 +41,14 @@ export default async function EditArticlePage({ params }: PageProps) {
             Ver en el sitio
           </Link>
         )}
+        {article.status === "SCHEDULED" && article.scheduledFor && (
+          <p className="rounded-full bg-[var(--cartel-blue)]/10 px-3 py-1.5 text-xs font-bold text-[var(--cartel-blue)]">
+            Programada ·{" "}
+            {new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(
+              article.scheduledFor,
+            )}
+          </p>
+        )}
       </div>
       <ArticleEditorForm
         categories={categories}
@@ -60,6 +68,7 @@ export default async function EditArticlePage({ params }: PageProps) {
           categoryId: article.categoryId,
           authorId: article.authorId,
           tagIds: article.tags.map((t) => t.tagId),
+          scheduledFor: article.scheduledFor?.toISOString() ?? null,
           canPublish: session?.user ? canPublish(session.user.role) : false,
         }}
       />

@@ -21,7 +21,12 @@ const saveSchema = z.object({
   categoryId: z.string(),
   authorId: z.string(),
   tagIds: z.array(z.string()),
+  scheduledFor: z.string().datetime().nullable().optional(),
 });
+
+function stripHtml(html: string) {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   const session = await auth();
@@ -33,8 +38,25 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   }
 
   const data = parsed.data;
-  if (data.status === "PUBLISHED" && !canPublish(session.user.role)) {
-    return { ok: false as const, error: "Tu rol no puede publicar directamente" };
+  if ((data.status === "PUBLISHED" || data.status === "SCHEDULED") && !canPublish(session.user.role)) {
+    return { ok: false as const, error: "Tu rol no puede publicar ni programar" };
+  }
+
+  if (data.status === "SCHEDULED") {
+    if (!data.scheduledFor) {
+      return { ok: false as const, error: "Elige fecha y hora para programar la noticia" };
+    }
+    if (new Date(data.scheduledFor).getTime() <= Date.now()) {
+      return { ok: false as const, error: "La programación debe ser en el futuro" };
+    }
+  }
+
+  const bodyText = stripHtml(data.contentHtml);
+  if ((data.status === "PUBLISHED" || data.status === "SCHEDULED") && bodyText.length < 40) {
+    return {
+      ok: false as const,
+      error: "Escribe al menos un párrafo antes de publicar o programar",
+    };
   }
 
   const slugBase = toSlug(data.title);
@@ -45,10 +67,15 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   });
   if (existingSlug) slug = `${slugBase}-${Date.now().toString(36)}`;
 
+  const scheduledFor =
+    data.status === "SCHEDULED" && data.scheduledFor ? new Date(data.scheduledFor) : null;
+
   const publishedAt =
     data.status === "PUBLISHED"
       ? new Date()
-      : undefined;
+      : data.status === "SCHEDULED"
+        ? null
+        : undefined;
 
   const article = data.id
     ? await prisma.article.update({
@@ -66,7 +93,8 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
           categoryId: data.categoryId,
           authorId: data.authorId,
           userId: session.user.id,
-          ...(publishedAt ? { publishedAt } : {}),
+          scheduledFor,
+          ...(publishedAt !== undefined ? { publishedAt } : {}),
           tags: {
             deleteMany: {},
             create: data.tagIds.map((tagId) => ({ tagId })),
@@ -88,6 +116,7 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
           categoryId: data.categoryId,
           authorId: data.authorId,
           userId: session.user.id,
+          scheduledFor,
           publishedAt: publishedAt ?? null,
           tags: {
             create: data.tagIds.map((tagId) => ({ tagId })),
@@ -105,8 +134,15 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   }
 
   revalidatePath("/");
+  revalidatePath("/admin");
   revalidatePath("/admin/articulos");
   revalidatePath(`/noticia/${article.slug}`);
 
-  return { ok: true as const, id: article.id, slug: article.slug };
+  return {
+    ok: true as const,
+    id: article.id,
+    slug: article.slug,
+    status: article.status,
+    scheduledFor: article.scheduledFor?.toISOString() ?? null,
+  };
 }
