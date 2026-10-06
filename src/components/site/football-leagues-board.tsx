@@ -8,13 +8,7 @@ import { ArrowUpRight, RefreshCw, Shield, Swords, Trophy } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -106,12 +100,12 @@ export function FootballLeaguesBoard({ standings, news, initialLeague = "premier
             }}
             className="gap-4"
           >
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1.5 bg-muted/80 p-1.5 lg:grid-cols-4">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1.5 bg-muted/80 p-1.5 sm:grid-cols-4">
               {FOOTBALL_LEAGUES.map((item) => (
                 <TabsTrigger
                   key={item.id}
                   value={item.id}
-                  className="h-auto min-h-14 flex-col items-start gap-0 rounded-lg px-3 py-2.5 text-left data-active:bg-[var(--cartel-blue)] data-active:text-white data-active:shadow-md sm:min-h-16"
+                  className="h-auto min-h-14 min-w-0 flex-col items-start gap-0 overflow-hidden rounded-lg px-2.5 py-2.5 text-left whitespace-normal data-active:bg-[var(--cartel-blue)] data-active:text-white data-active:shadow-md sm:min-h-16 sm:px-3"
                 >
                   <span className="flex w-full items-center gap-2">
                     <span className="text-base" aria-hidden>
@@ -138,27 +132,28 @@ export function FootballLeaguesBoard({ standings, news, initialLeague = "premier
               transition={{ duration: 0.2 }}
               className="space-y-5"
             >
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {highlights.map((item) => (
-                  <Card key={item.label} size="sm" className="bg-muted/25 ring-foreground/8">
-                    <CardHeader className="flex flex-row items-center gap-3">
-                      <span
-                        className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm"
-                        style={{ backgroundColor: item.color }}
-                      >
-                        <item.icon className="size-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-[0.16em]">
-                          {item.label}
-                        </CardDescription>
-                        <CardTitle className="truncate font-heading text-base font-black uppercase">
-                          {item.team}
-                        </CardTitle>
-                        <p className="text-xs text-muted-foreground">{item.detail}</p>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                  <div
+                    key={item.label}
+                    className="flex min-w-0 items-center gap-3 overflow-hidden rounded-xl bg-muted/25 px-3 py-3 ring-1 ring-foreground/8"
+                  >
+                    <span
+                      className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm"
+                      style={{ backgroundColor: item.color }}
+                    >
+                      <item.icon className="size-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        {item.label}
+                      </p>
+                      <p className="truncate font-heading text-base font-black uppercase leading-tight">
+                        {item.team}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">{item.detail}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
 
@@ -258,7 +253,7 @@ export function FootballLeaguesBoard({ standings, news, initialLeague = "premier
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--cartel-red)]">
               Cobertura
             </p>
-            <h3 className="font-heading text-xl font-black uppercase tracking-tight sm:text-2xl">
+            <h3 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               Noticias de {league.name}
             </h3>
           </div>
@@ -277,26 +272,22 @@ export function FootballLeaguesBoard({ standings, news, initialLeague = "premier
             ))}
           </div>
         ) : (
-          <Card className="items-center border-dashed bg-muted/20 py-10 text-center">
-            <CardHeader className="items-center">
-              <CardTitle className="font-heading text-lg font-black uppercase">
-                Todavía no hay notas de {league.name}
-              </CardTitle>
-              <CardDescription className="max-w-md">
-                La tabla sí se actualiza en vivo. Cuando la redacción publique sobre esta liga, las
-                notas aparecerán aquí automáticamente.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link
-                href="/categoria/futbol"
-                className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-[var(--cartel-blue)] hover:text-[var(--cartel-red)]"
-              >
-                Ver todo el fútbol
-                <ArrowUpRight className="size-4" />
-              </Link>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center">
+            <p className="text-base font-semibold text-foreground">
+              Todavía no hay notas de {league.name}
+            </p>
+            <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              La tabla sí se actualiza en vivo. Cuando la redacción publique sobre esta liga, las
+              notas aparecerán aquí automáticamente.
+            </p>
+            <Link
+              href="/categoria/futbol"
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--cartel-blue)] hover:text-[var(--cartel-red)]"
+            >
+              Ver todo el fútbol
+              <ArrowUpRight className="size-4" />
+            </Link>
+          </div>
         )}
       </div>
     </section>
