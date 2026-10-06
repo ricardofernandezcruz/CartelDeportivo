@@ -133,14 +133,7 @@ export default async function HomePage() {
 
       <CartelTvSection />
 
-      <OpinionsSection
-        items={columnists.map((c) => ({
-          slug: c.slug,
-          name: c.name,
-          column: c.column,
-          avatarUrl: c.avatarUrl,
-        }))}
-      />
+      <OpinionsSection items={columnists} />
 
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <section className="mt-4">

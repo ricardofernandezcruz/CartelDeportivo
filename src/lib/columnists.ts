@@ -37,6 +37,16 @@ export const COLUMNISTS = [
 
 export type ColumnistMeta = (typeof COLUMNISTS)[number];
 
+export type ColumnistCardData = {
+  id?: string;
+  slug: string;
+  name: string;
+  column: string;
+  role: string;
+  bio: string;
+  avatarUrl: string;
+};
+
 const COLUMNIST_SLUGS = COLUMNISTS.map((c) => c.slug);
 
 export function getColumnistMeta(slug: string) {
@@ -61,10 +71,6 @@ export async function ensureColumnists() {
     ),
   );
 }
-
-export type ColumnistCardData = ColumnistMeta & {
-  id?: string;
-};
 
 export async function getColumnists(): Promise<ColumnistCardData[]> {
   try {
