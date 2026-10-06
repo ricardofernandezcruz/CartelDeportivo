@@ -94,6 +94,19 @@ export async function getOpinionArticles(limit = 4) {
   });
 }
 
+export async function getPublishedArticlesByAuthor(authorSlug: string, limit?: number) {
+  return prisma.article.findMany({
+    where: {
+      status: "PUBLISHED",
+      publishedAt: { lte: new Date() },
+      author: { slug: authorSlug },
+    },
+    orderBy: { publishedAt: "desc" },
+    take: limit,
+    include: articleListInclude,
+  });
+}
+
 export async function getStoryArticles(limit = 8) {
   return prisma.article.findMany({
     where: {

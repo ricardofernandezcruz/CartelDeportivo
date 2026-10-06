@@ -14,10 +14,10 @@ import {
   getArticlesByCategory,
   getFeaturedArticles,
   getMostViewed,
-  getOpinionArticles,
   getPublishedArticles,
   getStoryArticles,
 } from "@/lib/articles";
+import { getColumnists } from "@/lib/columnists";
 import { getLidomStandings } from "@/lib/fetch-lidom-standings";
 
 export const revalidate = 60;
@@ -32,9 +32,9 @@ export default async function HomePage() {
     beisbol,
     futbol,
     baloncesto,
-    opinions,
     latest,
     lidom,
+    columnists,
   ] = await Promise.all([
     getFeaturedArticles(6),
     getPublishedArticles(10),
@@ -44,18 +44,12 @@ export default async function HomePage() {
     getArticlesByCategory("beisbol", 4),
     getArticlesByCategory("futbol", 4),
     getArticlesByCategory("baloncesto", 3),
-    getOpinionArticles(4),
     getPublishedArticles(5),
     getLidomStandings(),
+    getColumnists(),
   ]);
 
   const [featPrimary, featSecondary, ...featRest] = destacadas;
-  const opinionPool = [
-    ...opinions,
-    ...beisbol.filter((a) => !opinions.some((o) => o.id === a.id)),
-    ...futbol.filter((a) => !opinions.some((o) => o.id === a.id)),
-  ];
-  const opinionItems = opinionPool.slice(0, 4);
   const masDeporte = [...baloncesto, ...beisbol.slice(0, 1)].slice(0, 4);
 
   return (
@@ -140,12 +134,11 @@ export default async function HomePage() {
       <CartelTvSection />
 
       <OpinionsSection
-        items={opinionItems.map((a) => ({
-          slug: a.slug,
-          title: a.title,
-          publishedAt: a.publishedAt,
-          category: { name: a.category.name, slug: a.category.slug },
-          author: { name: a.author.name, avatarUrl: a.author.avatarUrl },
+        items={columnists.map((c) => ({
+          slug: c.slug,
+          name: c.name,
+          column: c.column,
+          avatarUrl: c.avatarUrl,
         }))}
       />
 

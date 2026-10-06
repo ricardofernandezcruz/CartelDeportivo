@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export type AuthorInfo = {
@@ -73,7 +74,14 @@ export function AuthorByline({
       <AuthorAvatar author={author} size="sm" />
       <div className="min-w-0 leading-tight">
         <p className="text-sm font-semibold text-foreground">
-          Por <span className="text-[var(--cartel-red)]">{author.name}</span>
+          Por{" "}
+          {author.slug ? (
+            <Link href={`/autor/${author.slug}`} className="text-[var(--cartel-red)] hover:underline">
+              {author.name}
+            </Link>
+          ) : (
+            <span className="text-[var(--cartel-red)]">{author.name}</span>
+          )}
         </p>
         {dateLabel && <p className="text-xs text-muted-foreground">{dateLabel}</p>}
       </div>
@@ -83,13 +91,8 @@ export function AuthorByline({
 
 /** Bloque al final de la noticia */
 export function AuthorCard({ author, className }: { author: AuthorInfo; className?: string }) {
-  return (
-    <aside
-      className={cn(
-        "flex gap-4 rounded-2xl border border-border bg-muted/30 p-5 sm:gap-5 sm:p-6",
-        className,
-      )}
-    >
+  const inner = (
+    <>
       <AuthorAvatar author={author} size="lg" />
       <div className="min-w-0">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Escrito por</p>
@@ -101,7 +104,28 @@ export function AuthorCard({ author, className }: { author: AuthorInfo; classNam
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">Redacción · Cartel Deportivo</p>
         )}
+        {author.slug && (
+          <p className="mt-3 text-sm font-semibold text-[var(--cartel-blue)] group-hover:text-[var(--cartel-red)]">
+            Ver perfil y notas
+          </p>
+        )}
       </div>
-    </aside>
+    </>
   );
+
+  const box = cn(
+    "flex gap-4 rounded-2xl border border-border bg-muted/30 p-5 sm:gap-5 sm:p-6",
+    author.slug && "group transition hover:border-[var(--cartel-blue)]/40 hover:bg-muted/50",
+    className,
+  );
+
+  if (author.slug) {
+    return (
+      <Link href={`/autor/${author.slug}`} className={box}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return <aside className={box}>{inner}</aside>;
 }

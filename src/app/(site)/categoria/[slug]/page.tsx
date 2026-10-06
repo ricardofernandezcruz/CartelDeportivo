@@ -55,23 +55,37 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const categories = await getAllCategories();
-  const category = categories.find((c) => c.slug === slug);
-  return { title: category?.name ?? "Categoría" };
+  try {
+    const categories = await getAllCategories();
+    const category = categories.find((c) => c.slug === slug);
+    return { title: category?.name ?? "Categoría" };
+  } catch {
+    return { title: slug === "futbol" ? "Fútbol" : "Categoría" };
+  }
 }
 
 export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const query = await searchParams;
-  const categories = await getAllCategories();
-  const category = categories.find((c) => c.slug === slug);
-  if (!category) notFound();
-
   const isFootball = slug === "futbol";
   const initialLeague = FOOTBALL_LEAGUES.some((l) => l.id === query.liga)
     ? (query.liga as FootballLeagueId)
     : "premier";
-  const articles = await getArticlesByCategory(slug, isFootball ? 60 : 24);
+
+  let category: { name: string; slug: string; description: string | null } | undefined;
+  let articles: CategoryArticle[] = [];
+  try {
+    const categories = await getAllCategories();
+    category = categories.find((c) => c.slug === slug);
+    if (category) {
+      articles = await getArticlesByCategory(slug, isFootball ? 60 : 24);
+    }
+  } catch {
+    if (isFootball) {
+      category = { name: "Fútbol", slug: "futbol", description: null };
+    }
+  }
+  if (!category) notFound();
   const board = isFootball ? await buildFootballBoard(articles) : null;
 
   // En fútbol, las notas de ligas europeas van dentro del board; el resto abajo.

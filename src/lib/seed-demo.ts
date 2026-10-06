@@ -101,14 +101,14 @@ export async function seedDatabase() {
       {
         name: "Pappy Pérez",
         slug: "pappy-perez",
-        bio: "Director y cronista deportivo. Cartel Deportivo se edita desde Santiago de los Caballeros bajo su dirección.",
-        avatarUrl: "/brand/pappy-perez.png",
+        bio: "Director de Cartel Deportivo. Cronista desde Santiago de los Caballeros; cubre LIDOM, Grandes Ligas y la actualidad del deporte dominicano.",
+        avatarUrl: "/brand/columnists/pappy-perez.png",
       },
       {
         name: "Tuto Tavárez",
         slug: "tuto-tavarez",
-        bio: "Cobertura LIDOM, boxeo y ligas locales del Cibao.",
-        avatarUrl: "https://i.pravatar.cc/150?u=tuto-tavarez",
+        bio: "Autor de la columna Pica y se Extiende. Cubre LIDOM, boxeo y las ligas del Cibao con un estilo directo y de opinión.",
+        avatarUrl: "/brand/columnists/tuto-tavarez.png",
       },
       {
         name: "Redacción Cartel Deportivo",
@@ -121,6 +121,18 @@ export async function seedDatabase() {
         slug: "mlb-com",
         bio: "Cobertura e información de Grandes Ligas.",
         avatarUrl: "https://i.pravatar.cc/150?u=mlb-com-wire",
+      },
+      {
+        name: "Domingo Hernández",
+        slug: "domingo-hernandez",
+        bio: "Firma de Entre Cuerdas. Opinión y análisis de boxeo, con mirada a los gyms, las veladas y los protagonistas del ring dominicano.",
+        avatarUrl: "/brand/columnists/domingo-hernandez.png",
+      },
+      {
+        name: "Rafael Baldayac",
+        slug: "rafael-baldayac",
+        bio: "Autor de Hechos históricos deportivos. Recupera efemérides, anécdotas y memoria del deporte mundial y dominicano.",
+        avatarUrl: "/brand/columnists/rafael-baldayac.jpg",
       },
     ].map((a) => prisma.author.create({ data: a })),
   );
@@ -605,6 +617,202 @@ export async function seedDatabase() {
         {
           type: "p",
           text: "La ciudad cibaeña suma otro argumento a su historial como sede de eventos internacionales. Para Cartel Deportivo, el mensaje es claro: cuando hay organización y pueblo, el deporte dominicano se agranda.",
+        },
+      ]),
+    },
+    {
+      title: "Lo logró…",
+      slug: "lo-logro-columna-entre-cuerdas",
+      excerpt:
+        "Columna Entre Cuerdas: cuando el ring confirma lo que el gym ya sabía, y el resto del país se entera tarde.",
+      categoryId: cat.boxeo.id,
+      authorId: authors[4].id,
+      featured: false,
+      heroImageUrl: IMG.boxeo,
+      viewCount: 188,
+      tagIds: [tag.opinion.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "En principio, pocos llegaron a pensar que esta sería una temporada de total decepción para algunos y de reivindicación para otros. El ring, como siempre, se encargó de poner las cosas en su sitio.",
+        },
+        {
+          type: "quote",
+          text: "El boxeo no perdona la duda. O entras a ganar, o sales a explicar.",
+        },
+        {
+          type: "p",
+          text: "Lo logró el que trabajó cuando nadie miraba. Esa es la única moraleja que vale en esta columna.",
+        },
+      ]),
+    },
+    {
+      title: "Impresionante…",
+      slug: "impresionante-entre-cuerdas",
+      excerpt: "Una noche de boxeo que dejó más preguntas que medallas, y un par de nombres para seguir de cerca.",
+      categoryId: cat.boxeo.id,
+      authorId: authors[4].id,
+      featured: false,
+      heroImageUrl: IMG.boxeo,
+      viewCount: 154,
+      tagIds: [tag.opinion.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "Impresionante el ritmo, impresionante la afición, impresionante también lo que aún falta por ordenar en el boxeo local. Se pelea con corazón; se organiza con oficio.",
+        },
+        {
+          type: "p",
+          text: "Entre Cuerdas no es un palco: es un recordatorio de que el espectáculo se sostiene en los gyms, no en los flashes.",
+        },
+      ]),
+    },
+    {
+      title: "El maestro y el ring: la deuda que el boxeo no puede aplazar",
+      slug: "el-maestro-y-el-ring-deuda-boxeo",
+      excerpt: "Sin formadores no hay campeones. La columna insiste en cuidar a quienes enseñan cuando se apaga la luz.",
+      categoryId: cat.boxeo.id,
+      authorId: authors[4].id,
+      featured: false,
+      heroImageUrl: IMG.boxeo,
+      viewCount: 121,
+      tagIds: [tag.opinion.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "Cada velada que reconoce a un maestro es un acto de justicia tardía. El boxeo dominicano se escribe en los barrios, con costales rotos y horarios imposibles.",
+        },
+        {
+          type: "p",
+          text: "Si la federación y los clubes no protegen esa escuela, el próximo cinturón será más anecdota que sistema.",
+        },
+      ]),
+    },
+    {
+      title: "Efemérides deportivas mundial: 23 de marzo",
+      slug: "efemerides-deportivas-mundial-23-marzo",
+      excerpt:
+        "Hechos históricos deportivos: una fecha que reúne hazañas, despedidas y coincidencias que el calendario no olvida.",
+      categoryId: cat.beisbol.id,
+      authorId: authors[5].id,
+      featured: false,
+      heroImageUrl: IMG.stadium,
+      viewCount: 97,
+      tagIds: [tag.opinion.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "El 23 de marzo ha sido testigo de marcas, debuts y despedidas que el deporte guarda mejor que muchos archivos oficiales. Repasarlos no es nostalgia: es brújula.",
+        },
+        {
+          type: "p",
+          text: "En esta entrega, Baldayac reconstruye el hilo de una jornada que cruza disciplinas y continentes, con el mismo rigor de siempre.",
+        },
+      ]),
+    },
+    {
+      title: "Cuando Gardel creía que 20 años no eran nada",
+      slug: "gardel-creia-20-anos-no-eran-nada-haime-thomas",
+      excerpt:
+        "Pica y se Extiende: Haime Thomas no piensa igual. El tiempo, en el deporte, cobra intereses.",
+      categoryId: cat.beisbol.id,
+      authorId: authors[1].id,
+      featured: false,
+      heroImageUrl: IMG.beisbol2,
+      viewCount: 176,
+      tagIds: [tag.opinion.id, tag.lidom.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "Gardel cantó que veinte años no es nada. Haime Thomas, y cualquier veterano que aún se pone el uniforme, sabe que el cuerpo lleva otra contabilidad.",
+        },
+        {
+          type: "quote",
+          text: "En LIDOM el calendario no perdona: o llegas listo en octubre, o el invierno te explica por qué.",
+        },
+      ]),
+    },
+    {
+      title: "El jonrón que el archivo sí recuerda",
+      slug: "el-jonron-que-el-archivo-si-recuerda",
+      excerpt: "Una efeméride de Grandes Ligas que todavía discute a los dominicanos en el centro de la historia.",
+      categoryId: cat.beisbol.id,
+      authorId: authors[5].id,
+      featured: false,
+      heroImageUrl: IMG.mlb,
+      viewCount: 132,
+      tagIds: [tag.opinion.id, tag.mlb.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "Hay jonrones que se celebran una noche y hay jonrones que se enseñan. Esta columna vuelve a uno de esos: el que el archivo no deja en paz.",
+        },
+        {
+          type: "p",
+          text: "La memoria deportiva no es adorno. Es la prueba de que el presente, sin contexto, se infla demasiado.",
+        },
+      ]),
+    },
+    {
+      title: "El día que el Cibao se quedó sin aliento",
+      slug: "el-dia-que-el-cibao-se-quedo-sin-aliento",
+      excerpt: "Hechos históricos: una final, un estadio y una ciudad que todavía cuenta esa noche como si fuera ayer.",
+      categoryId: cat.beisbol.id,
+      authorId: authors[5].id,
+      featured: false,
+      heroImageUrl: IMG.beisbol,
+      viewCount: 164,
+      tagIds: [tag.opinion.id, tag.lidom.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "Hay noches que no caben en una caja de recortes. El Cibao las guarda en la voz de los que estaban ahí, no en el marcador.",
+        },
+        {
+          type: "p",
+          text: "Volver a esa fecha no es repetir el cuento: es entender por qué esta afición exige tanto y olvida tan poco.",
+        },
+      ]),
+    },
+    {
+      title: "El núcleo no se toca: lo que las Águilas sí deben cuidar",
+      slug: "el-nucleo-no-se-toca-aguilas",
+      excerpt: "Segunda lectura del plan cibaeño: refuerzos sí, identidad también. El equilibrio es el título.",
+      categoryId: cat.beisbol.id,
+      authorId: authors[0].id,
+      featured: false,
+      heroImageUrl: IMG.beisbol2,
+      viewCount: 244,
+      tagIds: [tag.opinion.id, tag["aguilas-cibaenas"].id, tag.lidom.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "Se puede firmar un importado cada semana y aun así perder el camarín. Las Águilas lo saben: el núcleo no se improvisó, se sostuvo.",
+        },
+        {
+          type: "p",
+          text: "La gerencia acertó al tocar lo justo. Ahora el cuerpo técnico tiene que traducir esa geometría a outs y a carreras.",
+        },
+      ]),
+    },
+    {
+      title: "Octubre no espera a nadie en LIDOM",
+      slug: "octubre-no-espera-a-nadie-lidom",
+      excerpt: "Columna: los equipos que llegan tarde a su identidad pagan el invierno entero.",
+      categoryId: cat.beisbol.id,
+      authorId: authors[0].id,
+      featured: false,
+      heroImageUrl: IMG.stadium,
+      viewCount: 198,
+      tagIds: [tag.opinion.id, tag.lidom.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "LIDOM comprime el calendario como pocas ligas. No hay mes de rodaje elegante: hay que ganar y, al mismo tiempo, descubrir quién es el equipo.",
+        },
+        {
+          type: "quote",
+          text: "El que llega a diciembre todavía presentándose, ya se despidió.",
         },
       ]),
     },

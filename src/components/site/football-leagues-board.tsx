@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, RefreshCw, Shield, Swords, Trophy } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArticleCard, type ArticleCardData } from "@/components/site/article-card";
 import {
   FOOTBALL_LEAGUES,
@@ -89,75 +87,78 @@ export function FootballLeaguesBoard({ standings, news, initialLeague = "premier
           </div>
         </div>
 
-        <CardContent className="space-y-5 p-4 sm:p-6">
-          <Tabs
-            value={active}
-            onValueChange={(value) => {
-              if (typeof value === "string" && isLeagueId(value)) {
-                setActive(value);
-                setExpanded(false);
-              }
-            }}
-            className="gap-4"
+        <CardContent className="space-y-5 overflow-hidden p-4 sm:p-6">
+          <div
+            role="tablist"
+            aria-label="Ligas de Europa"
+            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
           >
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1.5 bg-muted/80 p-1.5 sm:grid-cols-4">
-              {FOOTBALL_LEAGUES.map((item) => (
-                <TabsTrigger
+            {FOOTBALL_LEAGUES.map((item) => {
+              const selected = item.id === active;
+              return (
+                <button
                   key={item.id}
-                  value={item.id}
-                  className="h-auto min-h-14 min-w-0 flex-col items-start gap-0 overflow-hidden rounded-lg px-2.5 py-2.5 text-left whitespace-normal data-active:bg-[var(--cartel-blue)] data-active:text-white data-active:shadow-md sm:min-h-16 sm:px-3"
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => {
+                    setActive(item.id);
+                    setExpanded(false);
+                  }}
+                  className={cn(
+                    "flex min-h-[4.25rem] min-w-0 flex-col items-start justify-center overflow-hidden rounded-lg px-3 py-2.5 text-left transition-colors",
+                    selected
+                      ? "bg-[var(--cartel-blue)] text-white shadow-md"
+                      : "bg-muted/80 text-foreground hover:bg-muted",
+                  )}
                 >
-                  <span className="flex w-full items-center gap-2">
-                    <span className="text-base" aria-hidden>
+                  <span className="flex w-full min-w-0 items-center gap-2">
+                    <span className="shrink-0 text-base leading-none" aria-hidden>
                       {item.flag}
                     </span>
                     <span className="truncate font-heading text-xs font-black uppercase leading-tight sm:text-sm">
-                      {item.name}
+                      {item.shortName}
                     </span>
                   </span>
-                  <span className="mt-0.5 pl-6 text-[10px] font-medium uppercase tracking-wider opacity-70 sm:text-[11px]">
+                  <span
+                    className={cn(
+                      "mt-1 w-full truncate pl-6 text-[10px] font-medium uppercase tracking-wider sm:text-[11px]",
+                      selected ? "text-white/75" : "text-muted-foreground",
+                    )}
+                  >
                     {item.country}
                   </span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+                </button>
+              );
+            })}
+          </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {highlights.map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex min-w-0 items-center gap-3 overflow-hidden rounded-xl bg-muted/25 px-3 py-3 ring-1 ring-foreground/8"
-                  >
-                    <span
-                      className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm"
-                      style={{ backgroundColor: item.color }}
-                    >
-                      <item.icon className="size-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                        {item.label}
-                      </p>
-                      <p className="truncate font-heading text-base font-black uppercase leading-tight">
-                        {item.team}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">{item.detail}</p>
-                    </div>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {highlights.map((item) => (
+              <div
+                key={item.label}
+                className="flex min-w-0 items-center gap-3 overflow-hidden rounded-xl bg-muted/25 px-3 py-3 ring-1 ring-foreground/8"
+              >
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm"
+                  style={{ backgroundColor: item.color }}
+                >
+                  <item.icon className="size-5" />
+                </span>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    {item.label}
+                  </p>
+                  <p className="truncate font-heading text-base font-black uppercase leading-tight">
+                    {item.team}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">{item.detail}</p>
+                </div>
               </div>
+            ))}
+          </div>
 
-              <Card className="gap-0 overflow-hidden py-0">
+          <Card className="gap-0 overflow-hidden py-0">
                 <div
                   className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 text-white sm:px-5"
                   style={{
@@ -242,8 +243,6 @@ export function FootballLeaguesBoard({ standings, news, initialLeague = "premier
                   </div>
                 )}
               </Card>
-            </motion.div>
-          </AnimatePresence>
         </CardContent>
       </Card>
 
@@ -361,6 +360,7 @@ function formatUpdatedAt(iso: string | null): string | null {
     return new Intl.DateTimeFormat("es-DO", {
       dateStyle: "medium",
       timeStyle: "short",
+      timeZone: "America/Santo_Domingo",
     }).format(new Date(iso));
   } catch {
     return null;
