@@ -135,6 +135,10 @@ export async function seedDatabase() {
       { name: "Opinión", slug: "opinion", type: "TOPIC" as const },
       { name: "Licey", slug: "licey", type: "TEAM" as const },
       { name: "Copa Davis", slug: "copa-davis", type: "TOPIC" as const },
+      { name: "Premier League", slug: "premier-league", type: "TOPIC" as const },
+      { name: "LaLiga", slug: "laliga", type: "TOPIC" as const },
+      { name: "Serie A", slug: "serie-a", type: "TOPIC" as const },
+      { name: "Ligue 1", slug: "ligue-1", type: "TOPIC" as const },
     ].map((t) => prisma.tag.create({ data: t })),
   );
   const tag = Object.fromEntries(tags.map((t) => [t.slug, t]));
@@ -239,6 +243,114 @@ export async function seedDatabase() {
         {
           type: "p",
           text: "Cibao FC mantiene su línea de irregularidad positiva; Salcedo se aferra al punto de visitante como botín valioso. La próxima jornada promete más emoción en la pelea por el liderato.",
+        },
+      ]),
+    },
+    {
+      title: "Manchester City golpea primero y se instala en la cima de la Premier League",
+      slug: "manchester-city-cima-premier-league",
+      excerpt:
+        "Cinco victorias en cinco salidas y una defensa casi impenetrable: los de Guardiola marcan el ritmo en Inglaterra.",
+      categoryId: cat.futbol.id,
+      authorId: authors[2].id,
+      featured: false,
+      heroImageUrl: IMG.premier,
+      viewCount: 412,
+      tagIds: [tag["premier-league"].id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "MANCHESTER.— El Manchester City cerró otra jornada perfecta y sostiene el liderato de la Premier League con paso impecable. El equipo combina posesión paciente con transiciones letales, una receta que hasta ahora ningún rival ha podido descifrar.",
+        },
+        { type: "h2", text: "Arsenal y Liverpool no se despegan" },
+        {
+          type: "p",
+          text: "Detrás, Arsenal mantiene la presión y Liverpool se recompone tras un arranque irregular. La zona de Champions League promete pelea hasta el final, con Brighton y Brentford metidos como invitados incómodos.",
+        },
+        {
+          type: "p",
+          text: "Para Cartel Deportivo, el dato clave está en la diferencia de goles: City convierte con una eficiencia que castiga cualquier error defensivo del rival.",
+        },
+      ]),
+    },
+    {
+      title: "Barcelona arrasa en LaLiga con siete victorias y un ataque demoledor",
+      slug: "barcelona-arrasa-laliga-siete-victorias",
+      excerpt:
+        "El conjunto azulgrana lidera España con marca perfecta, mientras Real Madrid y Atlético intentan no perderle el paso.",
+      categoryId: cat.futbol.id,
+      authorId: authors[2].id,
+      featured: false,
+      heroImageUrl: IMG.laliga,
+      viewCount: 537,
+      tagIds: [tag.laliga.id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "BARCELONA.— El Barcelona domina LaLiga con autoridad: siete partidos, siete triunfos y una diferencia de goles que ya se despega del resto. El mediocampo controla los tiempos y la delantera resuelve con una facilidad que asusta.",
+        },
+        { type: "h2", text: "La pelea por el segundo puesto" },
+        {
+          type: "p",
+          text: "Atlético de Madrid, Real Betis y Real Madrid se reparten la persecución con números muy parejos. En una liga tan cerrada, cada punto perdido pesa doble.",
+        },
+        {
+          type: "p",
+          text: "El calendario inmediato trae choques directos que pueden reordenar la tabla por completo.",
+        },
+      ]),
+    },
+    {
+      title: "AS Roma sorprende en la Serie A y encabeza un calcio más táctico que nunca",
+      slug: "as-roma-sorprende-serie-a",
+      excerpt:
+        "La defensa romana apenas ha sido vulnerada y eso alcanza para liderar una Serie A apretadísima en la cima.",
+      categoryId: cat.futbol.id,
+      authorId: authors[2].id,
+      featured: false,
+      heroImageUrl: IMG.seriea,
+      viewCount: 286,
+      tagIds: [tag["serie-a"].id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "ROMA.— La AS Roma lidera la Serie A con el mejor registro defensivo del torneo. Inter y Lazio igualan en puntos, pero el desempate por diferencia de goles favorece a los romanistas en este tramo.",
+        },
+        { type: "h2", text: "Un torneo de márgenes mínimos" },
+        {
+          type: "p",
+          text: "El calcio volvió a su esencia: partidos de pocos goles, mucha lectura táctica y resultados que se definen en detalles. Cagliari aparece como la sorpresa agradable de las primeras jornadas.",
+        },
+        {
+          type: "p",
+          text: "Juventus y Napoli siguen al acecho, conscientes de que la temporada es larga y el margen de error es casi nulo.",
+        },
+      ]),
+    },
+    {
+      title: "Mónaco manda en la Ligue 1 y el PSG se topa con un torneo más competitivo",
+      slug: "monaco-manda-ligue-1-psg-competencia",
+      excerpt:
+        "El conjunto del Principado aprovechó su arranque sólido para tomar la punta en Francia, con Lyon y Paris FC en la pelea.",
+      categoryId: cat.futbol.id,
+      authorId: authors[2].id,
+      featured: false,
+      heroImageUrl: IMG.ligue1,
+      viewCount: 231,
+      tagIds: [tag["ligue-1"].id],
+      ...richDoc([
+        {
+          type: "p",
+          text: "MÓNACO.— La Ligue 1 arrancó con un guion distinto al habitual: Mónaco lidera y el Paris Saint-Germain debe remar para no quedarse atrás en una temporada con más competencia que de costumbre.",
+        },
+        { type: "h2", text: "Lyon revive" },
+        {
+          type: "p",
+          text: "Lyon firma un inicio notable con la valla menos batida del campeonato, mientras Paris FC confirma que su ascenso no fue casualidad.",
+        },
+        {
+          type: "p",
+          text: "Con 18 equipos, el torneo francés ofrece menos margen: una mala racha de tres fechas puede costar la zona europea.",
         },
       ]),
     },
