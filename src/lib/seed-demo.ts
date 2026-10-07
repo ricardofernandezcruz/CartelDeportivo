@@ -101,13 +101,13 @@ export async function seedDatabase() {
       {
         name: "Pappy Pérez",
         slug: "pappy-perez",
-        bio: "Director de Cartel Deportivo. Cronista desde Santiago de los Caballeros; cubre LIDOM, Grandes Ligas y la actualidad del deporte dominicano.",
+        bio: "Director del Grupo Pappy Pérez: reúne múltiples programas de TV, radio y redes sociales en la plataforma Cartel Deportivo. Es miembro y expresidente de la Asociación de Cronistas Deportivos de Santiago. También del Colegio Dominicano de Periodistas. Redactor deportivo de El Nacional en Santiago.",
         avatarUrl: "/brand/columnists/pappy-perez.png",
       },
       {
         name: "Tuto Tavárez",
         slug: "tuto-tavarez",
-        bio: "Autor de la columna Pica y se Extiende. Cubre LIDOM, boxeo y las ligas del Cibao con un estilo directo y de opinión.",
+        bio: "Redactor deportivo de La Información y productor de TV. Expresidente de la ACDS y autor de los libros “Béisbol en voz Populi” y “Santiagueros en Grandes Ligas”. Ganador en múltiples ocasiones del premio Cronista del Año en Prensa Escrita, que otorga la Asociación de Cronistas Deportivos de Santiago.",
         avatarUrl: "/brand/columnists/tuto-tavarez.png",
       },
       {
@@ -125,13 +125,13 @@ export async function seedDatabase() {
       {
         name: "Domingo Hernández",
         slug: "domingo-hernandez",
-        bio: "Firma de Entre Cuerdas. Opinión y análisis de boxeo, con mirada a los gyms, las veladas y los protagonistas del ring dominicano.",
+        bio: "Editor deportivo del periódico La Información y analista experto de boxeo. Egresado de la carrera de Comunicación Social de UTESA, productor de TV y miembro de la Asociación de Cronistas Deportivos de Santiago (ACDS).",
         avatarUrl: "/brand/columnists/domingo-hernandez.png",
       },
       {
         name: "Rafael Baldayac",
         slug: "rafael-baldayac",
-        bio: "Autor de Hechos históricos deportivos. Recupera efemérides, anécdotas y memoria del deporte mundial y dominicano.",
+        bio: "Periodista, historiador deportivo y relacionista público. Miembro del CDP, de la ACDS y del staff de prensa de las Águilas Cibaeñas.",
         avatarUrl: "/brand/columnists/rafael-baldayac.jpg",
       },
     ].map((a) => prisma.author.create({ data: a })),

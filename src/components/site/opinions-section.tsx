@@ -2,15 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ColumnistCardItem = {
   slug: string;
   name: string;
   column: string;
+  role?: string;
   avatarUrl: string;
 };
+
+const CARD_BACKGROUNDS = [
+  "bg-[#cfeee0]",
+  "bg-[#f3d7c4]",
+  "bg-[#f3cdd6]",
+  "bg-[#cfe4f4]",
+] as const;
 
 function initials(name: string) {
   return name
@@ -25,66 +33,63 @@ export function OpinionsSection({ items }: { items: ColumnistCardItem[] }) {
   if (!items.length) return null;
 
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-br from-[var(--cartel-blue)] via-[#0a63b8] to-[#084a8a]">
-      <div className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-[var(--cartel-red)]/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+    <section className="relative isolate overflow-hidden bg-gradient-to-b from-muted/40 via-background to-background">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
+        <div className="mx-auto mb-12 max-w-2xl text-center sm:mb-14">
+          <p className="mb-4 inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-muted-foreground">
+            <span className="border-b border-foreground/30 pb-px">Opiniones</span>
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-[2.75rem]">
+            Las firmas detrás del Cartel
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Columnistas de Cartel Deportivo: béisbol, boxeo e historia, con la misma voz de siempre.
+          </p>
+        </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
-        <motion.h2
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-10 text-center font-heading text-3xl font-black uppercase tracking-tight text-white sm:mb-12 sm:text-4xl"
-        >
-          Opiniones
-        </motion.h2>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        <div className="grid grid-cols-1 gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item, i) => (
-            <motion.div
+            <Link
               key={item.slug}
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06, duration: 0.35 }}
-              className="min-w-0"
+              href={`/autor/${item.slug}`}
+              className="group relative block min-w-0 pb-5"
             >
-              <Link
-                href={`/autor/${item.slug}`}
+              <div
                 className={cn(
-                  "group flex h-full flex-col items-center rounded-2xl border border-white/15 bg-white/10 px-5 py-8 text-center backdrop-blur-sm",
-                  "transition-transform duration-300 ease-out",
-                  "hover:z-10 hover:scale-[1.06] hover:border-white/35 hover:bg-white/15 hover:shadow-xl hover:shadow-black/20",
+                  "relative aspect-[4/5] overflow-hidden rounded-[1.35rem] rounded-tl-[2.75rem]",
+                  "ring-2 ring-transparent transition duration-300",
+                  "group-hover:ring-[#3dba6e] group-hover:ring-offset-2 group-hover:ring-offset-background",
+                  CARD_BACKGROUNDS[i % CARD_BACKGROUNDS.length],
                 )}
               >
-                <span className="relative mb-5 size-28 overflow-hidden rounded-full ring-4 ring-white/35 sm:size-32">
-                  {item.avatarUrl ? (
-                    <Image
-                      src={item.avatarUrl}
-                      alt={item.name}
-                      fill
-                      sizes="128px"
-                      className="object-cover object-top grayscale transition-[filter] duration-500 ease-out group-hover:grayscale-0"
-                      unoptimized={item.avatarUrl.startsWith("/")}
-                    />
-                  ) : (
-                    <span className="flex size-full items-center justify-center bg-[var(--cartel-red)] text-2xl font-bold text-white">
-                      {initials(item.name)}
-                    </span>
-                  )}
-                </span>
+                {item.avatarUrl ? (
+                  <Image
+                    src={item.avatarUrl}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 280px"
+                    className="object-cover object-[center_12%] grayscale mix-blend-multiply transition-[filter,transform] duration-500 ease-out group-hover:scale-[1.04] group-hover:grayscale-0 group-hover:mix-blend-normal"
+                    unoptimized={item.avatarUrl.startsWith("/")}
+                  />
+                ) : (
+                  <span className="flex size-full items-center justify-center font-heading text-4xl font-black text-foreground/30">
+                    {initials(item.name)}
+                  </span>
+                )}
+              </div>
 
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">
-                  {item.column}
-                </p>
-                <h3 className="mt-1.5 font-heading text-xl font-black uppercase leading-tight tracking-tight text-white sm:text-2xl">
-                  {item.name}
-                </h3>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-white/80">
-                  Ver perfil
-                </p>
-              </Link>
-            </motion.div>
+              <div className="absolute inset-x-3 -bottom-1 rounded-2xl border border-border/70 bg-background px-4 py-3 shadow-md transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 text-left">
+                    <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                      {item.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{item.column}</p>
+                  </div>
+                  <ChevronsRight className="size-5 shrink-0 text-foreground/70 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-foreground" />
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       </div>
