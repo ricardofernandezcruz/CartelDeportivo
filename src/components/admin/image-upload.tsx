@@ -42,7 +42,14 @@ export function ImageUpload({
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body });
-      const data = (await res.json()) as { url?: string; error?: string };
+      const raw = await res.text();
+      let data: { url?: string; error?: string } = {};
+      try {
+        data = JSON.parse(raw) as { url?: string; error?: string };
+      } catch {
+        setError(res.ok ? "Respuesta inválida del servidor" : `Error ${res.status} al subir`);
+        return;
+      }
       if (!res.ok || !data.url) {
         setError(data.error ?? "No se pudo subir la imagen");
         return;
@@ -128,7 +135,7 @@ export function ImageUpload({
             <p className="text-sm font-semibold text-foreground">
               {uploading ? "Subiendo…" : "Arrastra o haz clic para subir"}
             </p>
-            <p className="text-xs">JPG, PNG, WebP, AVIF · máx. 6 MB · se convierte a WebP</p>
+            <p className="text-xs">JPG, PNG, WebP, AVIF · máx. 4 MB · se convierte a WebP</p>
           </div>
         )}
         {value && !uploading && (
