@@ -1,5 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
+const CARTEL_SOCIALS = {
+  facebook: "https://www.facebook.com/",
+  x: "https://x.com/grupopappyperez",
+  tiktok: "https://www.tiktok.com/@pappyperez",
+  instagram: "https://www.instagram.com/pappyperez/",
+} as const;
+
 export const COLUMNISTS = [
   {
     slug: "pappy-perez",
@@ -8,6 +15,12 @@ export const COLUMNISTS = [
     role: "Director del Grupo Pappy Pérez",
     bio: "Director del Grupo Pappy Pérez: reúne múltiples programas de TV, radio y redes sociales en la plataforma Cartel Deportivo. Es miembro y expresidente de la Asociación de Cronistas Deportivos de Santiago. También del Colegio Dominicano de Periodistas. Redactor deportivo de El Nacional en Santiago.",
     avatarUrl: "/brand/columnists/pappy-perez.png",
+    socials: {
+      facebook: "https://www.facebook.com/pappyperez",
+      x: "https://x.com/grupopappyperez",
+      tiktok: "https://www.tiktok.com/@pappyperez",
+      instagram: "https://www.instagram.com/pappyperez/",
+    },
   },
   {
     slug: "tuto-tavarez",
@@ -16,6 +29,7 @@ export const COLUMNISTS = [
     role: "Redactor deportivo y productor de TV",
     bio: "Redactor deportivo de La Información y productor de TV. Expresidente de la ACDS y autor de los libros “Béisbol en voz Populi” y “Santiagueros en Grandes Ligas”. Ganador en múltiples ocasiones del premio Cronista del Año en Prensa Escrita, que otorga la Asociación de Cronistas Deportivos de Santiago.",
     avatarUrl: "/brand/columnists/tuto-tavarez.png",
+    socials: { ...CARTEL_SOCIALS },
   },
   {
     slug: "domingo-hernandez",
@@ -24,6 +38,7 @@ export const COLUMNISTS = [
     role: "Editor deportivo",
     bio: "Editor deportivo del periódico La Información y analista experto de boxeo. Egresado de la carrera de Comunicación Social de UTESA, productor de TV y miembro de la Asociación de Cronistas Deportivos de Santiago (ACDS).",
     avatarUrl: "/brand/columnists/domingo-hernandez.png",
+    socials: { ...CARTEL_SOCIALS },
   },
   {
     slug: "rafael-baldayac",
@@ -32,10 +47,23 @@ export const COLUMNISTS = [
     role: "Periodista e historiador deportivo",
     bio: "Periodista, historiador deportivo y relacionista público. Miembro del CDP, de la ACDS y del staff de prensa de las Águilas Cibaeñas.",
     avatarUrl: "/brand/columnists/rafael-baldayac.png",
+    socials: { ...CARTEL_SOCIALS },
   },
 ] as const;
 
 export type ColumnistMeta = (typeof COLUMNISTS)[number];
+
+export type ColumnistLatestArticle = {
+  title: string;
+  slug: string;
+};
+
+export type ColumnistSocials = {
+  facebook?: string;
+  x?: string;
+  tiktok?: string;
+  instagram?: string;
+};
 
 export type ColumnistCardData = {
   id?: string;
@@ -45,6 +73,8 @@ export type ColumnistCardData = {
   role: string;
   bio: string;
   avatarUrl: string;
+  latestArticle: ColumnistLatestArticle | null;
+  socials: ColumnistSocials;
 };
 
 const COLUMNIST_SLUGS = COLUMNISTS.map((c) => c.slug);
@@ -77,6 +107,14 @@ export async function getColumnists(): Promise<ColumnistCardData[]> {
     await ensureColumnists();
     const rows = await prisma.author.findMany({
       where: { slug: { in: [...COLUMNIST_SLUGS] } },
+      include: {
+        articles: {
+          where: { status: "PUBLISHED", publishedAt: { lte: new Date() } },
+          orderBy: { publishedAt: "desc" },
+          take: 1,
+          select: { title: true, slug: true },
+        },
+      },
     });
     const bySlug = new Map(rows.map((r) => [r.slug, r]));
 
@@ -88,10 +126,11 @@ export async function getColumnists(): Promise<ColumnistCardData[]> {
         name: meta.name,
         bio: meta.bio,
         avatarUrl: meta.avatarUrl,
+        latestArticle: row?.articles[0] ?? null,
       };
     });
   } catch {
-    return COLUMNISTS.map((meta) => ({ ...meta }));
+    return COLUMNISTS.map((meta) => ({ ...meta, latestArticle: null }));
   }
 }
 
