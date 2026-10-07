@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { auth, canPublish } from "@/lib/auth";
+import { formatSchedule } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { ArticleEditorForm } from "@/components/admin/article-editor-form";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
@@ -16,7 +17,10 @@ export default async function EditArticlePage({ params }: PageProps) {
   const [article, categories, authors, tags] = await Promise.all([
     prisma.article.findUnique({
       where: { id },
-      include: { tags: true },
+      include: {
+        tags: true,
+        revisions: { orderBy: { createdAt: "desc" }, take: 8, select: { id: true, createdAt: true, editorName: true } },
+      },
     }),
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.author.findMany({ orderBy: { name: "asc" } }),
@@ -50,9 +54,7 @@ export default async function EditArticlePage({ params }: PageProps) {
         {article.status === "SCHEDULED" && article.scheduledFor && (
           <p className="rounded-full bg-[var(--cartel-blue)]/10 px-3 py-1.5 text-xs font-bold text-[var(--cartel-blue)]">
             Programada ·{" "}
-            {new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(
-              article.scheduledFor,
-            )}
+            {formatSchedule(article.scheduledFor)}
           </p>
         )}
       </div>
@@ -70,12 +72,23 @@ export default async function EditArticlePage({ params }: PageProps) {
           status: article.status,
           featured: article.featured,
           heroImageUrl: article.heroImageUrl ?? "",
+          heroAlt: article.heroAlt ?? "",
+          heroCredit: article.heroCredit ?? "",
+          heroCaption: article.heroCaption ?? "",
+          heroFocalX: article.heroFocalX,
+          heroFocalY: article.heroFocalY,
           youtubeId: article.youtubeId ?? "",
           categoryId: article.categoryId,
           authorId: article.authorId,
           tagIds: article.tags.map((t) => t.tagId),
           scheduledFor: article.scheduledFor?.toISOString() ?? null,
           canPublish: session?.user ? canPublish(session.user.role) : false,
+          updatedAt: article.updatedAt.toISOString(),
+          revisions: article.revisions.map((r) => ({
+            id: r.id,
+            createdAt: r.createdAt.toISOString(),
+            editorName: r.editorName,
+          })),
         }}
       />
     </div>

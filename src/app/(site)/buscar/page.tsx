@@ -15,9 +15,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 lg:px-6">
       <h1 className="font-heading text-4xl font-black uppercase tracking-tight">Buscar</h1>
-      <p className="mt-2 text-muted-foreground">
-        Meilisearch en producción; en demo también funciona búsqueda en PostgreSQL.
-      </p>
+      <p className="mt-2 text-muted-foreground">Equipos, ligas, jugadores y titulares.</p>
       <div className="mt-6">
         <SearchForm initialQuery={query} />
       </div>

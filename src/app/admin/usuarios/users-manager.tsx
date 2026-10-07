@@ -171,9 +171,13 @@ export function UsersManager({ users, currentUserId }: { users: UserRow[]; curre
             </div>
             <div className="space-y-1.5">
               <Label>Rol</Label>
-              <Select value={form.role} onValueChange={(v) => v && setForm({ ...form, role: v as UserRole })}>
+              <Select
+                value={form.role}
+                onValueChange={(v) => v && setForm({ ...form, role: v as UserRole })}
+                items={{ ADMIN: "Administrador", EDITOR: "Editor", WRITER: "Redactor" }}
+              >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue placeholder="Rol" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">Administrador</SelectItem>

@@ -58,7 +58,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const categories = await getAllCategories();
     const category = categories.find((c) => c.slug === slug);
-    return { title: category?.name ?? "Categoría" };
+    return {
+      title: category?.name ?? "Categoría",
+      description: category?.description ?? `Noticias de ${category?.name ?? slug} en Cartel Deportivo`,
+      alternates: { canonical: `/categoria/${slug}` },
+    };
   } catch {
     return { title: slug === "futbol" ? "Fútbol" : "Categoría" };
   }

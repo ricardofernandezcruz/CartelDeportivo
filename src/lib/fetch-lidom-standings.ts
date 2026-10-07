@@ -87,12 +87,32 @@ function seasonLabelFromYear(season: string): string {
   return `Temporada ${y}-${y + 1}`;
 }
 
+/** LIDOM YYYY-(YYYY+1) arranca en octubre YYYY y termina hacia febrero YYYY+1. */
+export function currentLidomSeasonId(now = new Date()): string {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Santo_Domingo",
+    year: "numeric",
+    month: "numeric",
+  });
+  const bag = Object.fromEntries(fmt.formatToParts(now).map((p) => [p.type, p.value]));
+  const year = Number(bag.year);
+  const month = Number(bag.month);
+  if (month <= 2) return String(year - 1);
+  return String(year);
+}
+
 async function latestLidomSeason(): Promise<string> {
-  const data = await mlbJson<{ seasons: Array<{ seasonId: string }> }>(
-    `/seasons?sportId=${SPORT_ID}&leagueId=${LEAGUE_ID}`,
-  );
-  const seasons = data.seasons || [];
-  return seasons.at(-1)?.seasonId || String(new Date().getFullYear());
+  const preferred = currentLidomSeasonId();
+  try {
+    const data = await mlbJson<{ seasons: Array<{ seasonId: string }> }>(
+      `/seasons?sportId=${SPORT_ID}&leagueId=${LEAGUE_ID}`,
+    );
+    const ids = (data.seasons || []).map((s) => s.seasonId);
+    if (ids.includes(preferred)) return preferred;
+  } catch {
+    /* usar temporada local */
+  }
+  return preferred;
 }
 
 function computeFinalFromGames(games: MlbGame[]): LidomStandingRow[] {

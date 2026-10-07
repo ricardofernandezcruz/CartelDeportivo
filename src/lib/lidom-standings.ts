@@ -117,7 +117,7 @@ export function formatGamesBack(value?: string | null): string {
 
 /** Fallback offline / si MLB no responde. */
 export const LIDOM_FALLBACK: LidomStandingsPayload = {
-  seasonLabel: "Temporada 2025-2026",
+  seasonLabel: "Temporada 2026-2027",
   updatedAt: null,
   source: "fallback",
   phases: {

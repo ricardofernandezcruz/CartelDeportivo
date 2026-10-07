@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ColumnistAvatar } from "@/components/site/columnist-avatar";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -41,21 +41,48 @@ const SOCIAL_ITEMS = [
   { key: "instagram", label: "Instagram", Icon: InstagramIcon },
 ] as const;
 
+function SocialRow({
+  item,
+  className,
+  iconClassName,
+}: {
+  item: ColumnistCardItem;
+  className?: string;
+  iconClassName?: string;
+}) {
+  const links = SOCIAL_ITEMS.map(({ key, label, Icon }) => {
+    const href = item.socials?.[key];
+    if (!href) return null;
+    return { key, label, Icon, href };
+  }).filter((v): v is NonNullable<typeof v> => Boolean(v));
+
+  if (!links.length) return null;
+
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
+      {links.map(({ key, label, Icon, href }) => (
+        <a
+          key={key}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`${item.name} en ${label}`}
+          title={label}
+          className={iconClassName}
+        >
+          <Icon className="size-5" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
 const CARD_THEMES = [
   { card: "bg-[#dbeafe]", avatar: "bg-[#93c5fd]" },
   { card: "bg-[#e8eaee]", avatar: "bg-[#c5c9d1]" },
   { card: "bg-[#d1fae5]", avatar: "bg-[#86efac]" },
   { card: "bg-[#fce7f3]", avatar: "bg-[#f9a8d4]" },
 ] as const;
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
-}
 
 function StyleToggle({
   value,
@@ -110,28 +137,35 @@ function StyleToggle({
 function LatestNoteLink({
   item,
   tone,
+  align = "center",
 }: {
   item: ColumnistCardItem;
   tone: "light" | "onBlue";
+  align?: "center" | "start";
 }) {
   const labelClass =
     tone === "onBlue" ? "text-white/70" : "text-[var(--cartel-blue)]";
   const titleClass =
     tone === "onBlue" ? "text-white" : "text-[var(--cartel-blue)]";
+  const start = align === "start";
 
   if (item.latestArticle) {
     return (
       <Link
         href={`/noticia/${item.latestArticle.slug}`}
         title={item.latestArticle.title}
-        className="mt-2 flex min-h-[2.375rem] w-full min-w-0 flex-col items-center"
+        className={cn(
+          "mt-2 flex min-h-[2.375rem] w-full min-w-0 flex-col",
+          start ? "items-start" : "items-center",
+        )}
       >
         <span className={cn("text-[10px] font-semibold uppercase tracking-[0.16em]", labelClass)}>
           Última nota
         </span>
         <span
           className={cn(
-            "mt-0.5 flex h-5 w-full min-w-0 items-center justify-center gap-1 text-sm font-medium underline-offset-2 hover:underline",
+            "mt-0.5 flex h-5 w-full min-w-0 items-center gap-1 text-sm font-medium underline-offset-2 hover:underline",
+            start ? "justify-start text-left" : "justify-center",
             titleClass,
           )}
         >
@@ -146,7 +180,7 @@ function LatestNoteLink({
     return (
       <Link
         href={`/autor/${item.slug}`}
-        className="mt-3 text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-white"
+        className="mt-2 text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-white"
       >
         Ver perfil
       </Link>
@@ -156,14 +190,18 @@ function LatestNoteLink({
   return (
     <Link
       href={`/autor/${item.slug}`}
-      className="mt-2 flex min-h-[2.375rem] w-full min-w-0 flex-col items-center"
+      className={cn(
+        "mt-2 flex min-h-[2.375rem] w-full min-w-0 flex-col",
+        start ? "items-start" : "items-center",
+      )}
     >
       <span className={cn("text-[10px] font-semibold uppercase tracking-[0.16em]", labelClass)}>
         Columna
       </span>
       <span
         className={cn(
-          "mt-0.5 flex h-5 w-full min-w-0 items-center justify-center gap-1 text-sm font-medium underline-offset-2 hover:underline",
+          "mt-0.5 flex h-5 w-full min-w-0 items-center gap-1 text-sm font-medium underline-offset-2 hover:underline",
+          start ? "justify-start text-left" : "justify-center",
           titleClass,
         )}
       >
@@ -180,13 +218,13 @@ function OpinionsCurrent({
   onStyleChange,
 }: {
   items: ColumnistCardItem[];
-  style: OpinionsStyle;
-  onStyleChange: (next: OpinionsStyle) => void;
+  style?: OpinionsStyle;
+  onStyleChange?: (next: OpinionsStyle) => void;
 }) {
   return (
     <section className="relative isolate border-y border-[var(--cartel-blue)]/15 bg-[#e8f1fb]">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-        <StyleToggle value={style} onChange={onStyleChange} />
+        {style && onStyleChange ? <StyleToggle value={style} onChange={onStyleChange} /> : null}
         <div className="mx-auto mb-14 max-w-2xl text-center sm:mb-16">
           <p className="mb-5 inline-flex items-center rounded-full bg-[var(--cartel-blue)] px-6 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-md sm:px-7 sm:py-3 sm:text-base">
             Opiniones
@@ -213,20 +251,13 @@ function OpinionsCurrent({
                     theme.avatar,
                   )}
                 >
-                  {item.avatarUrl ? (
-                    <Image
-                      src={item.avatarUrl}
-                      alt={item.name}
-                      fill
-                      sizes="128px"
-                      className="object-cover object-[center_18%] grayscale transition-[filter,transform] duration-500 ease-out group-hover:scale-105 group-hover:grayscale-0"
-                      unoptimized={item.avatarUrl.startsWith("/")}
-                    />
-                  ) : (
-                    <span className="flex size-full items-center justify-center font-heading text-2xl font-black text-white">
-                      {initials(item.name)}
-                    </span>
-                  )}
+                  <ColumnistAvatar
+                    src={item.avatarUrl}
+                    name={item.name}
+                    slug={item.slug}
+                    priority={i < 4}
+                    className="grayscale transition-[filter,transform] duration-500 ease-out group-hover:scale-105 group-hover:grayscale-0"
+                  />
                 </Link>
 
                 <div
@@ -244,27 +275,11 @@ function OpinionsCurrent({
 
                   <LatestNoteLink item={item} tone="light" />
 
-                  {item.socials && (
-                    <div className="mt-4 flex items-center justify-center gap-3">
-                      {SOCIAL_ITEMS.map(({ key, label, Icon }) => {
-                        const href = item.socials?.[key];
-                        if (!href) return null;
-                        return (
-                          <a
-                            key={key}
-                            href={href}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`${item.name} en ${label}`}
-                            title={label}
-                            className="text-foreground/80 transition hover:text-[var(--cartel-blue)]"
-                          >
-                            <Icon className="size-5" />
-                          </a>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <SocialRow
+                    item={item}
+                    className="mt-4 justify-center"
+                    iconClassName="text-foreground/80 transition hover:text-[var(--cartel-blue)]"
+                  />
                 </div>
               </article>
             );
@@ -281,8 +296,8 @@ function OpinionsClassic({
   onStyleChange,
 }: {
   items: ColumnistCardItem[];
-  style: OpinionsStyle;
-  onStyleChange: (next: OpinionsStyle) => void;
+  style?: OpinionsStyle;
+  onStyleChange?: (next: OpinionsStyle) => void;
 }) {
   return (
     <section className="relative isolate overflow-hidden bg-gradient-to-br from-[var(--cartel-blue)] via-[#0a63b8] to-[#084a8a]">
@@ -290,7 +305,7 @@ function OpinionsClassic({
       <div className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
-        <StyleToggle value={style} onChange={onStyleChange} inverted />
+        {style && onStyleChange ? <StyleToggle value={style} onChange={onStyleChange} inverted /> : null}
         <motion.h2
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -300,7 +315,7 @@ function OpinionsClassic({
           Opiniones
         </motion.h2>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {items.map((item, i) => (
             <motion.article
               key={item.slug}
@@ -309,42 +324,41 @@ function OpinionsClassic({
               viewport={{ once: true }}
               transition={{ delay: i * 0.06, duration: 0.35 }}
               className={cn(
-                "group flex h-full min-w-0 flex-col items-center rounded-xl border border-white/15 bg-white/10 px-5 py-8 text-center backdrop-blur-sm",
-                "transition-transform duration-300 ease-out",
-                "hover:z-10 hover:scale-[1.04] hover:border-white/35 hover:bg-white/15 hover:shadow-xl hover:shadow-black/20",
+                "group flex min-w-0 items-start gap-3 rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm",
+                "transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/15 hover:shadow-lg hover:shadow-black/10",
               )}
             >
               <Link
                 href={`/autor/${item.slug}`}
                 aria-label={item.name}
-                className="relative mb-5 size-28 overflow-hidden rounded-full ring-4 ring-white/35 sm:size-32"
+                className="relative size-14 shrink-0 overflow-hidden rounded-full bg-white/15 ring-2 ring-white/40 sm:size-16"
               >
-                {item.avatarUrl ? (
-                  <Image
-                    src={item.avatarUrl}
-                    alt={item.name}
-                    fill
-                    sizes="128px"
-                    className="object-cover object-top grayscale transition-[filter] duration-500 ease-out group-hover:grayscale-0"
-                    unoptimized={item.avatarUrl.startsWith("/")}
-                  />
-                ) : (
-                  <span className="flex size-full items-center justify-center bg-[var(--cartel-red)] text-2xl font-bold text-white">
-                    {initials(item.name)}
-                  </span>
-                )}
+                <ColumnistAvatar
+                  src={item.avatarUrl}
+                  name={item.name}
+                  slug={item.slug}
+                  sizes="64px"
+                  priority={i < 4}
+                  className="grayscale transition-[filter] duration-500 ease-out group-hover:grayscale-0"
+                />
               </Link>
 
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">
-                {item.column}
-              </p>
-              <h3 className="mt-1.5 font-heading text-xl font-black uppercase leading-tight tracking-tight text-white sm:text-2xl">
-                <Link href={`/autor/${item.slug}`} className="hover:underline">
-                  {item.name}
-                </Link>
-              </h3>
-
-              <LatestNoteLink item={item} tone="onBlue" />
+              <div className="min-w-0 flex-1 pt-0.5 text-left">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/80">
+                  {item.column}
+                </p>
+                <h3 className="mt-1 font-heading text-sm font-black uppercase leading-snug tracking-tight text-white sm:text-[15px]">
+                  <Link href={`/autor/${item.slug}`} className="hover:underline">
+                    {item.name}
+                  </Link>
+                </h3>
+                <LatestNoteLink item={item} tone="onBlue" align="start" />
+                <SocialRow
+                  item={item}
+                  className="mt-2"
+                  iconClassName="text-white/80 transition hover:text-white"
+                />
+              </div>
             </motion.article>
           ))}
         </div>

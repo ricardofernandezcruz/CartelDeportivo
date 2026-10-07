@@ -19,44 +19,59 @@ import {
 } from "@/lib/articles";
 import { getColumnists } from "@/lib/columnists";
 import { getLidomStandings } from "@/lib/fetch-lidom-standings";
+import { takeUnused } from "@/lib/home-feed";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
   const [
-    carouselSlides,
-    ticker,
-    destacadas,
-    mostViewed,
-    stories,
-    beisbol,
-    futbol,
-    baloncesto,
-    latest,
+    featuredPool,
+    publishedPool,
+    mostViewedPool,
+    storiesPool,
+    beisbolPool,
+    futbolPool,
+    baloncestoPool,
+    boxeoPool,
+    motorPool,
     lidom,
     columnists,
   ] = await Promise.all([
-    getFeaturedArticles(6),
-    getPublishedArticles(10),
-    getPublishedArticles(6),
-    getMostViewed(5),
-    getStoryArticles(8),
-    getArticlesByCategory("beisbol", 4),
-    getArticlesByCategory("futbol", 4),
-    getArticlesByCategory("baloncesto", 3),
-    getPublishedArticles(5),
+    getFeaturedArticles(12),
+    getPublishedArticles(36),
+    getMostViewed(8),
+    getStoryArticles(16),
+    getArticlesByCategory("beisbol", 12),
+    getArticlesByCategory("futbol", 12),
+    getArticlesByCategory("baloncesto", 12),
+    getArticlesByCategory("boxeo", 8),
+    getArticlesByCategory("motor", 8),
     getLidomStandings(),
     getColumnists(),
   ]);
 
+  const used = new Set<string>();
+  const ticker = publishedPool.slice(0, 10);
+  const heroSource = featuredPool.length ? featuredPool : publishedPool;
+  const carouselSlides = takeUnused(used, heroSource, 6);
+  const destacadas = takeUnused(used, publishedPool, 4);
+  const beisbol = takeUnused(used, beisbolPool, 4);
+  const futbol = takeUnused(used, futbolPool, 4);
+  const boxeo = takeUnused(used, boxeoPool, 4);
+  const motor = takeUnused(used, motorPool, 4);
+  const storiesUnique = takeUnused(used, storiesPool, 8);
+  const stories = storiesUnique.length >= 3 ? storiesUnique : storiesPool.slice(0, 8);
+  const masDeporte = takeUnused(used, [...baloncestoPool, ...boxeoPool, ...motorPool], 4);
+  const latest = takeUnused(used, publishedPool, 5);
+  const mostViewed = mostViewedPool.slice(0, 5);
+
   const [featPrimary, featSecondary, ...featRest] = destacadas;
-  const masDeporte = [...baloncesto, ...beisbol.slice(0, 1)].slice(0, 4);
 
   return (
     <>
       <BreakingTicker items={ticker} />
       <HeroCarousel
-        slides={(carouselSlides.length ? carouselSlides : ticker.slice(0, 6)).map((a) => ({
+        slides={carouselSlides.map((a) => ({
           slug: a.slug,
           title: a.title,
           excerpt: a.excerpt,
@@ -86,7 +101,7 @@ export default async function HomePage() {
               ))}
             </div>
 
-            <AdSlot label="Publicidad" />
+            <AdSlot label="Publicidad" slot="home" />
 
             <div>
               <SectionTitle title="Beísbol" href="/categoria/beisbol" />
@@ -97,7 +112,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <AdSlot label="Banreservas · Demo" />
+            <AdSlot slot="sidebar" />
 
             <div>
               <SectionTitle title="Fútbol" href="/categoria/futbol" />
@@ -107,6 +122,28 @@ export default async function HomePage() {
                 ))}
               </div>
             </div>
+
+            {boxeo.length > 0 && (
+              <div>
+                <SectionTitle title="Boxeo" href="/categoria/boxeo" />
+                <div className="divide-y divide-border/50 rounded-xl border border-border/60 bg-card/50 px-2">
+                  {boxeo.map((a) => (
+                    <ArticleCard key={a.id} article={a} variant="list" />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {motor.length > 0 && (
+              <div>
+                <SectionTitle title="Motor" href="/categoria/motor" />
+                <div className="divide-y divide-border/50 rounded-xl border border-border/60 bg-card/50 px-2">
+                  {motor.map((a) => (
+                    <ArticleCard key={a.id} article={a} variant="list" />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <aside className="space-y-6 lg:col-span-4">
@@ -119,14 +156,11 @@ export default async function HomePage() {
               ))}
             </div>
 
-            <AdSlot />
+            <AdSlot slot="sidebar" />
 
             <StoriesRail items={stories} title="En foco" />
 
-            <div className="rounded-xl border border-dashed border-[var(--cartel-blue)]/40 bg-[var(--cartel-blue)]/5 p-6 text-center">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--cartel-blue)]">PANAM</p>
-              <p className="mt-2 text-sm text-muted-foreground">Espacio patrocinador · como en el sitio en vivo</p>
-            </div>
+            <AdSlot label="Publicidad" slot="home" />
           </aside>
         </section>
       </div>
@@ -137,7 +171,7 @@ export default async function HomePage() {
 
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
         <section className="mt-4">
-          <SectionTitle title="Más deporte" href="/categoria/baloncesto" />
+          <SectionTitle title="Más deporte" />
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {masDeporte.map((a) => (
               <ArticleCard key={a.id} article={a} />

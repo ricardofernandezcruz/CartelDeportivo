@@ -3,10 +3,13 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { sniffImageMime } from "@/lib/mime";
+import { prisma } from "@/lib/prisma";
+import { processRasterImage } from "@/lib/process-image";
 
 export const runtime = "nodejs";
 
-const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
 const MAX_BYTES = 6 * 1024 * 1024;
 
 async function uploadToCloudinary(buffer: Buffer, filename: string, mime: string) {
@@ -31,8 +34,19 @@ async function uploadToCloudinary(buffer: Buffer, filename: string, mime: string
     body,
   });
   if (!res.ok) return null;
-  const data = (await res.json()) as { secure_url?: string };
-  return data.secure_url ?? null;
+  const data = (await res.json()) as {
+    secure_url?: string;
+    public_id?: string;
+    width?: number;
+    height?: number;
+  };
+  if (!data.secure_url) return null;
+  return {
+    url: data.secure_url,
+    publicId: data.public_id ?? null,
+    width: data.width ?? null,
+    height: data.height ?? null,
+  };
 }
 
 export async function POST(request: Request) {
@@ -48,40 +62,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Archivo requerido" }, { status: 400 });
   }
 
-  if (!ALLOWED.has(file.type)) {
-    return NextResponse.json(
-      { error: "Formato no permitido. Usa JPG, PNG, WebP o GIF." },
-      { status: 400 },
-    );
-  }
-
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: "La imagen no puede superar 6 MB." }, { status: 400 });
   }
 
-  const ext =
-    file.type === "image/png"
-      ? "png"
-      : file.type === "image/webp"
-        ? "webp"
-        : file.type === "image/gif"
-          ? "gif"
-          : "jpg";
-
-  const stamp = Date.now().toString(36);
-  const rand = Math.random().toString(36).slice(2, 8);
-  const filename = `${stamp}-${rand}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  const cloudUrl = await uploadToCloudinary(buffer, filename, file.type);
-  if (cloudUrl) {
-    return NextResponse.json({ url: cloudUrl, filename });
+  const raw = Buffer.from(await file.arrayBuffer());
+  const sniff = sniffImageMime(raw);
+  if (!sniff || !ALLOWED.has(sniff)) {
+    return NextResponse.json(
+      { error: "Formato no permitido. Usa JPG, PNG, WebP, AVIF o GIF reales." },
+      { status: 400 },
+    );
   }
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-  await writeFile(path.join(uploadsDir, filename), buffer);
+  const processed = await processRasterImage(raw, sniff);
+  const stamp = Date.now().toString(36);
+  const rand = Math.random().toString(36).slice(2, 8);
+  const filename = `${stamp}-${rand}.${processed.ext}`;
 
-  const url = `/uploads/${filename}`;
-  return NextResponse.json({ url, filename });
+  const cloud = await uploadToCloudinary(processed.buffer, filename, processed.mime);
+  const url = cloud?.url ?? `/uploads/${filename}`;
+
+  if (!cloud) {
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    await mkdir(uploadsDir, { recursive: true });
+    await writeFile(path.join(uploadsDir, filename), processed.buffer);
+  }
+
+  const alt = file.name.replace(/\.[^.]+$/, "").slice(0, 120);
+  const asset = await prisma.mediaAsset
+    .create({
+      data: {
+        url,
+        publicId: cloud?.publicId,
+        alt,
+        width: cloud?.width ?? processed.width,
+        height: cloud?.height ?? processed.height,
+        mimeType: processed.mime,
+      },
+    })
+    .catch(() => null);
+
+  return NextResponse.json({
+    url,
+    filename,
+    width: asset?.width ?? cloud?.width ?? processed.width,
+    height: asset?.height ?? cloud?.height ?? processed.height,
+  });
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { SiteImage } from "@/components/site/site-image";
 import {
   ArrowRight,
   CalendarClock,
@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { publishDueArticles } from "@/lib/publish-scheduled";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatRelativeDate } from "@/lib/format";
+import { formatRelativeDate, formatSchedule } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const statusLabel: Record<string, string> = {
@@ -24,13 +24,6 @@ const statusLabel: Record<string, string> = {
   REVIEW: "Revisión",
   SCHEDULED: "Programada",
 };
-
-function formatSchedule(date: Date) {
-  return new Intl.DateTimeFormat("es-DO", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 export default async function AdminDashboardPage() {
   await publishDueArticles().catch(() => null);
@@ -179,13 +172,12 @@ export default async function AdminDashboardPage() {
               >
                 <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
                   {article.heroImageUrl ? (
-                    <Image
+                    <SiteImage
                       src={article.heroImageUrl}
                       alt=""
                       fill
                       className="object-cover"
                       sizes="80px"
-                      unoptimized={article.heroImageUrl.startsWith("/")}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">

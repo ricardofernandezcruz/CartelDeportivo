@@ -1,17 +1,19 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+import { publicImageUrl } from "@/lib/media";
+import { SiteImage } from "@/components/site/site-image";
 
 export function HeroSlideMedia({ src, title }: { src?: string | null; title: string }) {
   const [failed, setFailed] = useState(false);
-  const showImage = src && !failed;
+  const url = publicImageUrl(src);
+  const showImage = url && !failed;
 
   return (
     <>
       {showImage ? (
-        <Image
-          src={src}
+        <SiteImage
+          src={url}
           alt=""
           fill
           className="object-cover"

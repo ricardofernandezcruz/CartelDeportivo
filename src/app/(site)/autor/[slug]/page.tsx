@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight } from "lucide-react";
 import { ArticleCard } from "@/components/site/article-card";
+import { ColumnistAvatar } from "@/components/site/columnist-avatar";
 import { getAuthorBySlug } from "@/lib/columnists";
 import { getPublishedArticlesByAuthor } from "@/lib/articles";
 
@@ -48,22 +48,14 @@ export default async function AuthorPage({ params }: PageProps) {
       </nav>
 
       <header className="flex flex-col items-center gap-6 rounded-2xl border border-border bg-muted/20 px-6 py-10 text-center sm:flex-row sm:items-start sm:text-left sm:px-10">
-        <span className="relative size-36 shrink-0 overflow-hidden rounded-full bg-white ring-4 ring-[var(--cartel-blue)]/20 sm:size-40">
-          {author.avatarUrl ? (
-            <Image
-              src={author.avatarUrl}
-              alt={author.name}
-              fill
-              sizes="160px"
-              className="object-cover object-center"
-              unoptimized={author.avatarUrl.startsWith("/")}
-              priority
-            />
-          ) : (
-            <span className="flex size-full items-center justify-center bg-[var(--cartel-blue)] font-heading text-4xl font-black text-white">
-              {author.name.slice(0, 2).toUpperCase()}
-            </span>
-          )}
+        <span className="relative size-36 shrink-0 overflow-hidden rounded-full bg-[var(--cartel-blue)] ring-4 ring-[var(--cartel-blue)]/20 sm:size-40">
+          <ColumnistAvatar
+            src={author.avatarUrl}
+            name={author.name}
+            slug={author.slug}
+            sizes="160px"
+            priority
+          />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--cartel-red)]">

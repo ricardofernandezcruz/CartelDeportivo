@@ -1,7 +1,35 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeDate } from "@/lib/format";
+import { publicImageUrl } from "@/lib/media";
+import { SiteImage } from "@/components/site/site-image";
+
+function CoverImage({
+  src,
+  sizes,
+  className,
+  priority,
+}: {
+  src?: string | null;
+  sizes: string;
+  className?: string;
+  priority?: boolean;
+}) {
+  const url = publicImageUrl(src);
+  if (!url) {
+    return <div className="absolute inset-0 bg-gradient-to-br from-[var(--cartel-red)] to-[var(--cartel-blue)]" />;
+  }
+  return (
+    <SiteImage
+      src={url}
+      alt=""
+      fill
+      className={className}
+      sizes={sizes}
+      priority={priority}
+    />
+  );
+}
 
 export type ArticleCardData = {
   slug: string;
@@ -28,18 +56,12 @@ export function ArticleCard({
     return (
       <Link href={href} className="group relative block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60">
         <div className="relative aspect-[16/9] min-h-[280px] w-full sm:aspect-[21/9]">
-          {article.heroImageUrl ? (
-            <Image
-              src={article.heroImageUrl}
-              alt=""
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-              sizes="(max-width: 768px) 100vw, 1200px"
-              priority
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--cartel-red)] to-[var(--cartel-blue)]" />
-          )}
+          <CoverImage
+            src={article.heroImageUrl}
+            sizes="(max-width: 768px) 100vw, 1200px"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            priority
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--cartel-blue)]/90 via-[var(--cartel-blue)]/40 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
             <Badge className="mb-3 bg-primary text-primary-foreground">{article.category.name}</Badge>
@@ -75,9 +97,7 @@ export function ArticleCard({
           </p>
         </div>
         <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted sm:aspect-square">
-          {article.heroImageUrl && (
-            <Image src={article.heroImageUrl} alt="" fill className="object-cover transition group-hover:scale-105" sizes="200px" />
-          )}
+          <CoverImage src={article.heroImageUrl} sizes="200px" className="object-cover transition group-hover:scale-105" />
         </div>
       </Link>
     );
@@ -87,9 +107,7 @@ export function ArticleCard({
     return (
       <Link href={href} className="group flex gap-4 border-b border-border/70 py-4 last:border-0">
         <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md bg-muted sm:h-24 sm:w-32">
-          {article.heroImageUrl && (
-            <Image src={article.heroImageUrl} alt="" fill className="object-cover" sizes="128px" />
-          )}
+          <CoverImage src={article.heroImageUrl} sizes="128px" className="object-cover" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-heading text-lg font-black uppercase leading-tight group-hover:text-[var(--cartel-red)]">
@@ -106,9 +124,7 @@ export function ArticleCard({
     return (
       <Link href={href} className="group flex items-start gap-3 py-3">
         <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded bg-muted">
-          {article.heroImageUrl && (
-            <Image src={article.heroImageUrl} alt="" fill className="object-cover" sizes="80px" />
-          )}
+          <CoverImage src={article.heroImageUrl} sizes="80px" className="object-cover" />
         </div>
         <div className="min-w-0">
           <p className="line-clamp-2 text-sm font-bold leading-snug group-hover:text-[var(--cartel-red)]">{article.title}</p>
@@ -141,9 +157,7 @@ export function ArticleCard({
     return (
       <Link href={href} className="group flex gap-3 rounded-lg p-2 transition-colors hover:bg-muted/60">
         <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
-          {article.heroImageUrl && (
-            <Image src={article.heroImageUrl} alt="" fill className="object-cover" sizes="96px" />
-          )}
+          <CoverImage src={article.heroImageUrl} sizes="96px" className="object-cover" />
         </div>
         <div className="min-w-0">
           <p className="line-clamp-2 text-sm font-semibold leading-snug group-hover:text-primary">{article.title}</p>
@@ -156,9 +170,7 @@ export function ArticleCard({
   return (
     <Link href={href} className="group flex flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative aspect-[16/10] bg-muted">
-        {article.heroImageUrl && (
-          <Image src={article.heroImageUrl} alt="" fill className="object-cover transition group-hover:scale-[1.03]" sizes="(max-width:768px) 100vw, 400px" />
-        )}
+        <CoverImage src={article.heroImageUrl} sizes="(max-width:768px) 100vw, 400px" className="object-cover transition group-hover:scale-[1.03]" />
         <Badge className="absolute left-3 top-3" style={{ backgroundColor: article.category.color }}>
           {article.category.name}
         </Badge>

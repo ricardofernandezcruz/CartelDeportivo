@@ -6,8 +6,11 @@ import {
   ExternalLink,
   FileText,
   FolderTree,
+  Images,
   LayoutDashboard,
   LogOut,
+  Mail,
+  MessageSquare,
   Newspaper,
   Tags,
   UserCog,
@@ -46,6 +49,9 @@ const nav: {
   { href: "/admin/categorias", label: "Categorías", icon: FolderTree },
   { href: "/admin/autores", label: "Autores", icon: Users },
   { href: "/admin/etiquetas", label: "Etiquetas", icon: Tags },
+  { href: "/admin/comentarios", label: "Comentarios", icon: MessageSquare },
+  { href: "/admin/medios", label: "Medios", icon: Images },
+  { href: "/admin/boletin", label: "Boletín", icon: Mail },
   { href: "/admin/usuarios", label: "Usuarios", icon: UserCog, adminOnly: true },
 ];
 
@@ -71,8 +77,8 @@ export function AdminShell({
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar variant="inset" collapsible="icon" className="border-r-0">
+    <SidebarProvider className="max-w-[100vw] overflow-x-hidden">
+      <Sidebar variant="sidebar" collapsible="icon">
         <SidebarHeader className="border-b border-sidebar-border bg-gradient-to-br from-[var(--cartel-red)]/10 via-transparent to-[var(--cartel-blue)]/10">
           <div className="flex items-center gap-2.5 px-2 py-2">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--cartel-red)] to-[var(--cartel-blue)] font-heading text-xs font-black text-white shadow-sm">
@@ -133,7 +139,7 @@ export function AdminShell({
           </Button>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="bg-[#f7f7f8] dark:bg-background">
+      <SidebarInset className="min-w-0 overflow-x-hidden bg-[#f7f7f8] dark:bg-background">
         <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/80 bg-white/90 px-4 backdrop-blur dark:bg-background/90">
           <SidebarTrigger />
           <div className="flex-1" />
@@ -147,7 +153,7 @@ export function AdminShell({
           </Link>
           <ThemeToggle />
         </header>
-        <div className="flex-1 p-4 md:p-6 lg:p-8">{children}</div>
+        <div className="min-w-0 flex-1 overflow-x-hidden p-4 md:p-6 lg:p-8">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

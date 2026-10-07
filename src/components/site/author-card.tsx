@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { publicAvatarUrl } from "@/lib/media";
+import { SiteImage } from "@/components/site/site-image";
 
 export type AuthorInfo = {
   name: string;
@@ -30,16 +31,16 @@ export function AuthorAvatar({
   const box =
     size === "sm" ? "h-9 w-9 text-xs" : size === "lg" ? "h-[72px] w-[72px] text-lg" : "h-12 w-12 text-sm";
 
-  if (author.avatarUrl) {
+  const avatar = publicAvatarUrl(author.avatarUrl);
+  if (avatar) {
     return (
       <span className={cn("relative inline-block shrink-0 overflow-hidden rounded-full ring-2 ring-border", box, className)}>
-        <Image
-          src={author.avatarUrl}
+        <SiteImage
+          src={avatar}
           alt={author.name}
           width={px}
           height={px}
           className="h-full w-full object-cover"
-          unoptimized={author.avatarUrl.startsWith("/")}
         />
       </span>
     );

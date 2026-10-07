@@ -11,6 +11,8 @@ export const articleListInclude = {
 export async function getPublishedArticles(limit = 20) {
   // Red de seguridad si el cron aún no corrió
   await publishDueArticles().catch(() => null);
+  const { scrubDemoMediaOnce } = await import("@/lib/scrub-demo-media");
+  await scrubDemoMediaOnce();
 
   return prisma.article.findMany({
     where: { status: "PUBLISHED", publishedAt: { lte: new Date() } },
@@ -74,6 +76,77 @@ export async function incrementViewCount(articleId: string) {
   await prisma.article.update({
     where: { id: articleId },
     data: { viewCount: { increment: 1 } },
+  });
+}
+
+export async function getArticlesByTag(slug: string, limit = 24) {
+  return prisma.article.findMany({
+    where: {
+      status: "PUBLISHED",
+      publishedAt: { lte: new Date() },
+      tags: { some: { tag: { slug } } },
+    },
+    orderBy: { publishedAt: "desc" },
+    take: limit,
+    include: articleListInclude,
+  });
+}
+
+export async function getTagBySlug(slug: string) {
+  return prisma.tag.findUnique({ where: { slug } });
+}
+
+export async function getRelatedArticles(
+  article: { id: string; categoryId: string; tags: { tagId: string }[] },
+  limit = 6,
+) {
+  const tagIds = article.tags.map((t) => t.tagId);
+  const tagged =
+    tagIds.length > 0
+      ? await prisma.article.findMany({
+          where: {
+            id: { not: article.id },
+            status: "PUBLISHED",
+            publishedAt: { lte: new Date() },
+            tags: { some: { tagId: { in: tagIds } } },
+          },
+          orderBy: { publishedAt: "desc" },
+          take: limit,
+          include: articleListInclude,
+        })
+      : [];
+
+  if (tagged.length >= limit) return tagged;
+
+  const extra = await prisma.article.findMany({
+    where: {
+      id: { notIn: [article.id, ...tagged.map((a) => a.id)] },
+      status: "PUBLISHED",
+      publishedAt: { lte: new Date() },
+      categoryId: article.categoryId,
+    },
+    orderBy: { publishedAt: "desc" },
+    take: limit - tagged.length,
+    include: articleListInclude,
+  });
+
+  return [...tagged, ...extra];
+}
+
+export async function getApprovedComments(articleId: string) {
+  return prisma.comment.findMany({
+    where: { articleId, status: "APPROVED" },
+    orderBy: { createdAt: "desc" },
+    take: 40,
+    select: { id: true, name: true, body: true, createdAt: true },
+  });
+}
+
+export async function getPublishedSitemapEntries() {
+  return prisma.article.findMany({
+    where: { status: "PUBLISHED", publishedAt: { lte: new Date() } },
+    orderBy: { publishedAt: "desc" },
+    select: { slug: true, publishedAt: true, updatedAt: true, title: true },
   });
 }
 

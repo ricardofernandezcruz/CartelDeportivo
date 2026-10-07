@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" role="img" aria-label="Béisbol">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fb0c0b"/>
+      <stop offset="100%" stop-color="#7a0a12"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="900" fill="url(#g)"/>
+  <text x="700" y="470" fill="#fff" font-family="Arial, sans-serif" font-size="72" font-weight="800" text-anchor="middle">BÉISBOL</text>
+</svg>

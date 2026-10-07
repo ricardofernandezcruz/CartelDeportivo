@@ -45,10 +45,12 @@ export function SiteHeader({ categories = defaultNav }: { categories?: NavCatego
 
           <Link
             href="/buscar"
+            title="Buscar"
             aria-label="Buscar"
             className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "justify-self-end")}
           >
             <Search className="h-5 w-5" />
+            <span className="sr-only">Buscar</span>
           </Link>
         </div>
         <p className="pb-2 text-center font-[family-name:var(--font-heading)] text-[11px] font-medium italic text-foreground/70 sm:text-xs">

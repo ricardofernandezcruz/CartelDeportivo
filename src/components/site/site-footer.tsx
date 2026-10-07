@@ -8,14 +8,20 @@ import {
   XIcon,
   YoutubeIcon,
 } from "@/components/site/social-icons";
+import { SITE_SOCIALS } from "@/lib/site-socials";
 
-const footerSocial = [
-  { label: "Facebook", href: "https://www.facebook.com/", Icon: FacebookIcon },
-  { label: "X", href: "https://x.com/", Icon: XIcon },
-  { label: "Instagram", href: "https://www.instagram.com/", Icon: InstagramIcon },
-  { label: "YouTube", href: "https://www.youtube.com/", Icon: YoutubeIcon },
-  { label: "TikTok", href: "https://www.tiktok.com/", Icon: TikTokIcon },
-] as const;
+const iconByLabel = {
+  Facebook: FacebookIcon,
+  X: XIcon,
+  Instagram: InstagramIcon,
+  YouTube: YoutubeIcon,
+  TikTok: TikTokIcon,
+} as const;
+
+const footerSocial = SITE_SOCIALS.map((item) => ({
+  ...item,
+  Icon: iconByLabel[item.label],
+}));
 
 function BrandMark({ className = "" }: { className?: string }) {
   return (
@@ -122,6 +128,14 @@ export function SiteFooter() {
 
           <p className="text-xs text-muted-foreground">
             © {year} carteldeportivo. Todos los derechos reservados.
+            {" · "}
+            <Link href="/privacidad" className="hover:text-[var(--cartel-blue)] hover:underline">
+              Privacidad
+            </Link>
+            {" · "}
+            <Link href="/terminos" className="hover:text-[var(--cartel-blue)] hover:underline">
+              Términos
+            </Link>
           </p>
 
           <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">

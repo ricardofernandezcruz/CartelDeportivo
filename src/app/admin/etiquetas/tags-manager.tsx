@@ -159,9 +159,13 @@ export function TagsManager({ tags }: { tags: TagRow[] }) {
             </div>
             <div className="space-y-1.5">
               <Label>Tipo</Label>
-              <Select value={form.type} onValueChange={(v) => v && setForm({ ...form, type: v as TagType })}>
+              <Select
+                value={form.type}
+                onValueChange={(v) => v && setForm({ ...form, type: v as TagType })}
+                items={{ TOPIC: "Tema", TEAM: "Equipo", PLAYER: "Jugador" }}
+              >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="TOPIC">Tema</SelectItem>

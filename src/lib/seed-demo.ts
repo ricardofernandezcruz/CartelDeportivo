@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { ensureMeiliIndex, syncArticleToMeili } from "@/lib/search";
 import { demoImages } from "@/lib/demo-images";
+import { CARTEL_SOCIAL_URLS } from "@/lib/site-socials";
 
 const prisma = new PrismaClient();
 const IMG = demoImages;
@@ -121,16 +122,16 @@ export async function seedDatabase() {
         role: "Redactor deportivo y productor de TV",
         featured: true,
         sortOrder: 2,
-        facebook: "https://www.facebook.com/",
-        twitter: "https://x.com/grupopappyperez",
-        tiktok: "https://www.tiktok.com/@pappyperez",
-        instagram: "https://www.instagram.com/pappyperez/",
+        facebook: CARTEL_SOCIAL_URLS.facebook,
+        twitter: "https://x.com/tutotavarez",
+        tiktok: CARTEL_SOCIAL_URLS.tiktok,
+        instagram: CARTEL_SOCIAL_URLS.instagram,
       },
       {
         name: "Redacción Cartel Deportivo",
         slug: "redaccion",
         bio: "Equipo editorial de Cartel Deportivo. Lo más completo en deportes.",
-        avatarUrl: "https://i.pravatar.cc/150?u=redaccion-cartel",
+        avatarUrl: "/brand/logo-mark.png",
         column: "Redacción",
         role: "Equipo editorial",
         featured: false,
@@ -140,7 +141,7 @@ export async function seedDatabase() {
         name: "MLB.com",
         slug: "mlb-com",
         bio: "Cobertura e información de Grandes Ligas.",
-        avatarUrl: "https://i.pravatar.cc/150?u=mlb-com-wire",
+        avatarUrl: "/brand/placeholders/mlb.svg",
         column: "MLB",
         role: "Agencia",
         featured: false,
@@ -155,10 +156,10 @@ export async function seedDatabase() {
         role: "Editor deportivo",
         featured: true,
         sortOrder: 3,
-        facebook: "https://www.facebook.com/",
-        twitter: "https://x.com/grupopappyperez",
-        tiktok: "https://www.tiktok.com/@pappyperez",
-        instagram: "https://www.instagram.com/pappyperez/",
+        facebook: CARTEL_SOCIAL_URLS.facebook,
+        twitter: CARTEL_SOCIAL_URLS.x,
+        tiktok: CARTEL_SOCIAL_URLS.tiktok,
+        instagram: CARTEL_SOCIAL_URLS.instagram,
       },
       {
         name: "Rafael Baldayac",
@@ -169,10 +170,10 @@ export async function seedDatabase() {
         role: "Periodista e historiador deportivo",
         featured: true,
         sortOrder: 4,
-        facebook: "https://www.facebook.com/",
-        twitter: "https://x.com/grupopappyperez",
-        tiktok: "https://www.tiktok.com/@pappyperez",
-        instagram: "https://www.instagram.com/pappyperez/",
+        facebook: CARTEL_SOCIAL_URLS.facebook,
+        twitter: CARTEL_SOCIAL_URLS.x,
+        tiktok: CARTEL_SOCIAL_URLS.tiktok,
+        instagram: "https://www.instagram.com/rafael_baldayac/",
       },
     ].map((a) => prisma.author.create({ data: a })),
   );
@@ -205,7 +206,7 @@ export async function seedDatabase() {
       authorId: authors[0].id,
       featured: true,
       heroImageUrl: IMG.beisbol,
-      youtubeId: "dQw4w9WgXcQ",
+      youtubeId: "wwy2jLaAWCg",
       viewCount: 842,
       tagIds: [tag["aguilas-cibaenas"].id, tag.lidom.id],
       ...richDoc([

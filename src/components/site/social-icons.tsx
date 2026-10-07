@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { SITE_SOCIALS } from "@/lib/site-socials";
 
 type IconProps = { className?: string };
 
@@ -44,13 +45,18 @@ export function TikTokIcon({ className }: IconProps) {
   );
 }
 
-export const siteSocialLinks = [
-  { label: "Facebook", href: "https://www.facebook.com/", Icon: FacebookIcon },
-  { label: "X", href: "https://x.com/", Icon: XIcon },
-  { label: "Instagram", href: "https://www.instagram.com/", Icon: InstagramIcon },
-  { label: "YouTube", href: "https://www.youtube.com/", Icon: YoutubeIcon },
-  { label: "TikTok", href: "https://www.tiktok.com/", Icon: TikTokIcon },
-] as const;
+const iconByLabel = {
+  Facebook: FacebookIcon,
+  X: XIcon,
+  Instagram: InstagramIcon,
+  YouTube: YoutubeIcon,
+  TikTok: TikTokIcon,
+} as const;
+
+export const siteSocialLinks = SITE_SOCIALS.map((item) => ({
+  ...item,
+  Icon: iconByLabel[item.label],
+}));
 
 export function SocialLinks({
   variant = "dark",

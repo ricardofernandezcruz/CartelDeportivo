@@ -14,9 +14,17 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-full flex-col bg-white dark:bg-background">
+      <a
+        href="#contenido"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[var(--cartel-red)] focus:px-3 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
+      >
+        Saltar al contenido
+      </a>
       <TopBar />
       <SiteHeader categories={categories} />
-      <main className="flex-1">{children}</main>
+      <main id="contenido" className="flex-1">
+        {children}
+      </main>
       <SiteFooter />
     </div>
   );

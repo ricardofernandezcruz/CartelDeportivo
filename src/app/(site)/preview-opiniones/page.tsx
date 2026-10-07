@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { OpinionsSection } from "@/components/site/opinions-section";
 import { COLUMNISTS } from "@/lib/columnists";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "Vista previa de opiniones",
+};
 
 export default function PreviewOpinionesPage() {
   return (

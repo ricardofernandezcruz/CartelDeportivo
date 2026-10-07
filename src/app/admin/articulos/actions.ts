@@ -16,12 +16,19 @@ const saveSchema = z.object({
   contentHtml: z.string().min(1),
   status: z.enum(["DRAFT", "REVIEW", "SCHEDULED", "PUBLISHED"]),
   featured: z.boolean(),
+  slug: z.string().optional(),
   heroImageUrl: z.string().nullable(),
+  heroAlt: z.string().nullable().optional(),
+  heroCredit: z.string().nullable().optional(),
+  heroCaption: z.string().nullable().optional(),
+  heroFocalX: z.number().min(0).max(100).optional(),
+  heroFocalY: z.number().min(0).max(100).optional(),
   youtubeId: z.string().nullable(),
-  categoryId: z.string(),
-  authorId: z.string(),
+  categoryId: z.string().min(1, "Elige una categoría"),
+  authorId: z.string().min(1, "Elige una firma"),
   tagIds: z.array(z.string()),
   scheduledFor: z.string().datetime().nullable().optional(),
+  expectedUpdatedAt: z.string().datetime().optional(),
 });
 
 function stripHtml(html: string) {
@@ -38,6 +45,14 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   }
 
   const data = parsed.data;
+
+  const [category, author] = await Promise.all([
+    prisma.category.findUnique({ where: { id: data.categoryId }, select: { id: true } }),
+    prisma.author.findUnique({ where: { id: data.authorId }, select: { id: true } }),
+  ]);
+  if (!category) return { ok: false as const, error: "Elige una categoría válida" };
+  if (!author) return { ok: false as const, error: "Elige una firma válida" };
+
   if ((data.status === "PUBLISHED" || data.status === "SCHEDULED") && !canPublish(session.user.role)) {
     return { ok: false as const, error: "Tu rol no puede publicar ni programar" };
   }
@@ -62,11 +77,21 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   const existing = data.id
     ? await prisma.article.findUnique({
         where: { id: data.id },
-        select: { slug: true, publishedAt: true, status: true },
+        select: { slug: true, publishedAt: true, status: true, updatedAt: true, title: true, excerpt: true, contentJson: true, contentHtml: true },
       })
     : null;
 
-  const slugBase = existing?.slug || toSlug(data.title);
+  if (existing && data.expectedUpdatedAt) {
+    const incoming = new Date(data.expectedUpdatedAt).getTime();
+    if (Math.abs(existing.updatedAt.getTime() - incoming) > 1500) {
+      return {
+        ok: false as const,
+        error: "Otro editor guardó esta nota. Recarga la página para no pisar cambios.",
+      };
+    }
+  }
+
+  const slugBase = (data.slug?.trim() ? toSlug(data.slug) : "") || existing?.slug || toSlug(data.title);
   let slug = slugBase;
   const existingSlug = await prisma.article.findFirst({
     where: { slug, NOT: data.id ? { id: data.id } : undefined },
@@ -95,6 +120,11 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
           status: data.status as ArticleStatus,
           featured: data.featured,
           heroImageUrl: data.heroImageUrl,
+          heroAlt: data.heroAlt ?? null,
+          heroCredit: data.heroCredit ?? null,
+          heroCaption: data.heroCaption ?? null,
+          heroFocalX: data.heroFocalX ?? 50,
+          heroFocalY: data.heroFocalY ?? 50,
           youtubeId: data.youtubeId,
           categoryId: data.categoryId,
           authorId: data.authorId,
@@ -118,6 +148,11 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
           status: data.status as ArticleStatus,
           featured: data.featured,
           heroImageUrl: data.heroImageUrl,
+          heroAlt: data.heroAlt ?? null,
+          heroCredit: data.heroCredit ?? null,
+          heroCaption: data.heroCaption ?? null,
+          heroFocalX: data.heroFocalX ?? 50,
+          heroFocalY: data.heroFocalY ?? 50,
           youtubeId: data.youtubeId,
           categoryId: data.categoryId,
           authorId: data.authorId,
@@ -131,6 +166,28 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
         include: { category: true },
       });
 
+  if (existing) {
+    await prisma.articleRevision.create({
+      data: {
+        articleId: article.id,
+        title: existing.title,
+        excerpt: existing.excerpt,
+        contentJson: existing.contentJson as Prisma.InputJsonValue,
+        contentHtml: existing.contentHtml,
+        editorName: session.user.name ?? session.user.email ?? null,
+      },
+    });
+    const old = await prisma.articleRevision.findMany({
+      where: { articleId: article.id },
+      orderBy: { createdAt: "desc" },
+      skip: 15,
+      select: { id: true },
+    });
+    if (old.length) {
+      await prisma.articleRevision.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
+    }
+  }
+
   if (data.status === "PUBLISHED") {
     const indexed = await prisma.article.findUnique({
       where: { id: article.id },
@@ -143,6 +200,9 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   revalidatePath("/admin");
   revalidatePath("/admin/articulos");
   revalidatePath(`/noticia/${article.slug}`);
+  revalidatePath("/rss.xml");
+  revalidatePath("/news-sitemap.xml");
+  revalidatePath("/sitemap.xml");
 
   return {
     ok: true as const,
@@ -150,6 +210,23 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
     slug: article.slug,
     status: article.status,
     scheduledFor: article.scheduledFor?.toISOString() ?? null,
+    updatedAt: article.updatedAt.toISOString(),
+  };
+}
+
+export async function restoreRevisionAction(revisionId: string) {
+  const session = await auth();
+  if (!session?.user) return { ok: false as const, error: "No autenticado" };
+
+  const revision = await prisma.articleRevision.findUnique({ where: { id: revisionId } });
+  if (!revision) return { ok: false as const, error: "Versión no encontrada" };
+
+  return {
+    ok: true as const,
+    title: revision.title,
+    excerpt: revision.excerpt ?? "",
+    contentJson: revision.contentJson as object,
+    contentHtml: revision.contentHtml,
   };
 }
 

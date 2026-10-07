@@ -1,7 +1,9 @@
 "use server";
 
+import { headers } from "next/headers";
 import { AuthError } from "next-auth";
 import { signIn } from "@/lib/auth";
+import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -10,6 +12,12 @@ export async function loginAction(formData: FormData) {
 
   if (!email || !password) {
     return { error: "Correo y contraseña son obligatorios." };
+  }
+
+  const ip = clientIpFromHeaders(await headers());
+  const limited = rateLimit(`login:${ip}:${email}`);
+  if (!limited.ok) {
+    return { error: "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo." };
   }
 
   try {

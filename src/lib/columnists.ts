@@ -1,11 +1,28 @@
 import { prisma } from "@/lib/prisma";
+import { publicAvatarUrl } from "@/lib/media";
+import { CARTEL_SOCIAL_URLS } from "@/lib/site-socials";
 
-const CARTEL_SOCIALS = {
-  facebook: "https://www.facebook.com/",
-  x: "https://x.com/grupopappyperez",
-  tiktok: "https://www.tiktok.com/@pappyperez",
-  instagram: "https://www.instagram.com/pappyperez/",
-} as const;
+export type ColumnistSocials = {
+  facebook?: string;
+  x?: string;
+  tiktok?: string;
+  instagram?: string;
+};
+
+function isBareSocial(url?: string | null) {
+  if (!url) return true;
+  const u = url.trim().replace(/\/+$/, "");
+  return (
+    u === "https://www.facebook.com" ||
+    u === "https://facebook.com" ||
+    u === "https://x.com" ||
+    u === "https://twitter.com" ||
+    u === "https://www.instagram.com" ||
+    u === "https://instagram.com" ||
+    u === "https://www.tiktok.com" ||
+    u === "https://tiktok.com"
+  );
+}
 
 export const COLUMNISTS = [
   {
@@ -31,7 +48,12 @@ export const COLUMNISTS = [
     bio: "Redactor deportivo de La Información y productor de TV. Expresidente de la ACDS y autor de los libros “Béisbol en voz Populi” y “Santiagueros en Grandes Ligas”. Ganador en múltiples ocasiones del premio Cronista del Año en Prensa Escrita, que otorga la Asociación de Cronistas Deportivos de Santiago.",
     avatarUrl: "/brand/columnists/tuto-tavarez.png",
     sortOrder: 2,
-    socials: { ...CARTEL_SOCIALS },
+    socials: {
+      facebook: CARTEL_SOCIAL_URLS.facebook,
+      x: "https://x.com/tutotavarez",
+      tiktok: CARTEL_SOCIAL_URLS.tiktok,
+      instagram: CARTEL_SOCIAL_URLS.instagram,
+    },
   },
   {
     slug: "domingo-hernandez",
@@ -41,7 +63,7 @@ export const COLUMNISTS = [
     bio: "Editor deportivo del periódico La Información y analista experto de boxeo. Egresado de la carrera de Comunicación Social de UTESA, productor de TV y miembro de la Asociación de Cronistas Deportivos de Santiago (ACDS).",
     avatarUrl: "/brand/columnists/domingo-hernandez.png",
     sortOrder: 3,
-    socials: { ...CARTEL_SOCIALS },
+    socials: { ...CARTEL_SOCIAL_URLS },
   },
   {
     slug: "rafael-baldayac",
@@ -51,7 +73,12 @@ export const COLUMNISTS = [
     bio: "Periodista, historiador deportivo y relacionista público. Miembro del CDP, de la ACDS y del staff de prensa de las Águilas Cibaeñas.",
     avatarUrl: "/brand/columnists/rafael-baldayac.png",
     sortOrder: 4,
-    socials: { ...CARTEL_SOCIALS },
+    socials: {
+      facebook: CARTEL_SOCIAL_URLS.facebook,
+      x: CARTEL_SOCIAL_URLS.x,
+      tiktok: CARTEL_SOCIAL_URLS.tiktok,
+      instagram: "https://www.instagram.com/rafael_baldayac/",
+    },
   },
 ] as const;
 
@@ -60,13 +87,6 @@ export type ColumnistMeta = (typeof COLUMNISTS)[number];
 export type ColumnistLatestArticle = {
   title: string;
   slug: string;
-};
-
-export type ColumnistSocials = {
-  facebook?: string;
-  x?: string;
-  tiktok?: string;
-  instagram?: string;
 };
 
 export type ColumnistCardData = {
@@ -90,11 +110,23 @@ function socialsFromRow(row: {
   instagram?: string | null;
 }): ColumnistSocials {
   return {
-    facebook: row.facebook || undefined,
-    x: row.twitter || undefined,
-    tiktok: row.tiktok || undefined,
-    instagram: row.instagram || undefined,
+    facebook: isBareSocial(row.facebook) ? undefined : row.facebook || undefined,
+    x: isBareSocial(row.twitter) ? undefined : row.twitter || undefined,
+    tiktok: isBareSocial(row.tiktok) ? undefined : row.tiktok || undefined,
+    instagram: isBareSocial(row.instagram) ? undefined : row.instagram || undefined,
   };
+}
+
+function mergeSocials(...parts: Array<ColumnistSocials | undefined>): ColumnistSocials {
+  const merged: ColumnistSocials = { ...CARTEL_SOCIAL_URLS };
+  for (const part of parts) {
+    if (!part) continue;
+    if (part.facebook) merged.facebook = part.facebook;
+    if (part.x) merged.x = part.x;
+    if (part.tiktok) merged.tiktok = part.tiktok;
+    if (part.instagram) merged.instagram = part.instagram;
+  }
+  return merged;
 }
 
 export function getColumnistMeta(slug: string) {
@@ -104,14 +136,21 @@ export function getColumnistMeta(slug: string) {
 export async function ensureColumnists() {
   const existing = await prisma.author.findMany({
     where: { slug: { in: [...COLUMNIST_SLUGS] } },
-    select: { slug: true },
+    select: {
+      slug: true,
+      facebook: true,
+      twitter: true,
+      tiktok: true,
+      instagram: true,
+    },
   });
-  const have = new Set(existing.map((a) => a.slug));
-  if (have.size === COLUMNISTS.length) return;
+  const bySlug = new Map(existing.map((a) => [a.slug, a]));
 
   await Promise.all(
-    COLUMNISTS.filter((c) => !have.has(c.slug)).map((c, index) =>
-      prisma.author.upsert({
+    COLUMNISTS.map((c, index) => {
+      const socials = mergeSocials(c.socials);
+      const row = bySlug.get(c.slug);
+      return prisma.author.upsert({
         where: { slug: c.slug },
         create: {
           name: c.name,
@@ -122,19 +161,26 @@ export async function ensureColumnists() {
           role: c.role,
           featured: true,
           sortOrder: c.sortOrder ?? index + 1,
-          facebook: c.socials.facebook,
-          twitter: c.socials.x,
-          tiktok: c.socials.tiktok,
-          instagram: c.socials.instagram,
+          facebook: socials.facebook,
+          twitter: socials.x,
+          tiktok: socials.tiktok,
+          instagram: socials.instagram,
         },
-        update: {},
-      }),
-    ),
+        update: {
+          facebook: isBareSocial(row?.facebook) ? socials.facebook : undefined,
+          twitter: isBareSocial(row?.twitter) ? socials.x : undefined,
+          tiktok: isBareSocial(row?.tiktok) ? socials.tiktok : undefined,
+          instagram: isBareSocial(row?.instagram) ? socials.instagram : undefined,
+        },
+      });
+    }),
   );
 }
 
 export async function getColumnists(): Promise<ColumnistCardData[]> {
   try {
+    const { scrubDemoMediaOnce } = await import("@/lib/scrub-demo-media");
+    await scrubDemoMediaOnce();
     await ensureColumnists();
     const rows = await prisma.author.findMany({
       where: { featured: true },
@@ -157,9 +203,10 @@ export async function getColumnists(): Promise<ColumnistCardData[]> {
         column: row.column || "Opinión",
         role: row.role || "Redacción",
         bio: row.bio || "",
-        avatarUrl: row.avatarUrl || "",
+        avatarUrl:
+          publicAvatarUrl(row.avatarUrl) || getColumnistMeta(row.slug)?.avatarUrl || "",
         latestArticle: row.articles[0] ?? null,
-        socials: socialsFromRow(row),
+        socials: mergeSocials(getColumnistMeta(row.slug)?.socials, socialsFromRow(row)),
       }));
     }
 
@@ -182,11 +229,11 @@ export async function getAuthorBySlug(slug: string) {
         slug: author.slug,
         name: author.name,
         bio: author.bio,
-        avatarUrl: author.avatarUrl,
+        avatarUrl: publicAvatarUrl(author.avatarUrl) || meta?.avatarUrl || null,
         column: author.column || meta?.column || "Opinión",
         role: author.role || meta?.role || "Redacción",
         isColumnist: author.featured,
-        socials: socialsFromRow(author),
+        socials: mergeSocials(meta?.socials, socialsFromRow(author)),
       };
     }
 

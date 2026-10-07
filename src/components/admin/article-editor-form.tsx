@@ -1,15 +1,18 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarClock,
   CheckCircle2,
   Circle,
   Clock3,
+  Eye,
   Loader2,
+  Monitor,
   Save,
   Send,
+  Smartphone,
   Sparkles,
   Wand2,
 } from "lucide-react";
@@ -28,9 +31,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { saveArticleAction } from "@/app/admin/articulos/actions";
+import { DatetimeRd } from "@/components/admin/datetime-rd";
+import { ArticleBody } from "@/components/site/article-body";
+import { restoreRevisionAction, saveArticleAction } from "@/app/admin/articulos/actions";
 import type { ArticleStatus, Prisma } from "@prisma/client";
 import { cn } from "@/lib/utils";
+import { SITE_TZ, santoDomingoToIso } from "@/lib/timezone";
+import { toSlug } from "@/lib/slug";
+import { readingTimeMinutes, wordCount, stripHtml as stripHtmlShared } from "@/lib/format";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type CategoryOption = { id: string; name: string };
 type AuthorOption = { id: string; name: string };
@@ -46,12 +60,19 @@ export type ArticleEditorInitial = {
   status: ArticleStatus;
   featured: boolean;
   heroImageUrl: string;
+  heroAlt: string;
+  heroCredit: string;
+  heroCaption: string;
+  heroFocalX: number;
+  heroFocalY: number;
   youtubeId: string;
   categoryId: string;
   authorId: string;
   tagIds: string[];
   scheduledFor?: string | null;
   canPublish: boolean;
+  updatedAt?: string | null;
+  revisions?: Array<{ id: string; createdAt: string; editorName: string | null }>;
 };
 
 const emptyDoc = {
@@ -59,22 +80,63 @@ const emptyDoc = {
   content: [{ type: "paragraph" }],
 };
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
+const TEMPLATES: Record<string, { label: string; json: object; html: string }> = {
+  nota: {
+    label: "Nota",
+    json: {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Santiago.– " }] },
+        { type: "paragraph", content: [{ type: "text", text: "El dato clave: " }] },
+        { type: "paragraph" },
+      ],
+    },
+    html: "<p>Santiago.– </p><p>El dato clave: </p><p></p>",
+  },
+  cronica: {
+    label: "Crónica",
+    json: {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Había un ruido distinto en el estadio." }] },
+        { type: "paragraph", content: [{ type: "text", text: "Lo que pasó después cambió el partido:" }] },
+        { type: "paragraph" },
+      ],
+    },
+    html: "<p>Había un ruido distinto en el estadio.</p><p>Lo que pasó después cambió el partido:</p><p></p>",
+  },
+  opinion: {
+    label: "Opinión",
+    json: {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Hay que decirlo claro: " }] },
+        { type: "paragraph", content: [{ type: "text", text: "El argumento de fondo es este." }] },
+        { type: "paragraph" },
+      ],
+    },
+    html: "<p>Hay que decirlo claro: </p><p>El argumento de fondo es este.</p><p></p>",
+  },
+};
 
-function toLocalInputValue(iso?: string | null) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromLocalInputValue(value: string): string | null {
-  if (!value) return null;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
+function partsInRd(date: Date) {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: SITE_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  const bag = Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value]));
+  return {
+    year: Number(bag.year),
+    month: Number(bag.month),
+    day: Number(bag.day),
+    hour: Number(bag.hour),
+    minute: Number(bag.minute),
+  };
 }
 
 function extractYoutubeId(raw: string) {
@@ -96,7 +158,21 @@ function extractYoutubeId(raw: string) {
 }
 
 function stripHtml(html: string) {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return stripHtmlShared(html);
+}
+
+function imagesMissingAlt(json: unknown) {
+  let missing = 0;
+  function walk(node: unknown) {
+    if (!node || typeof node !== "object") return;
+    const n = node as { type?: string; attrs?: Record<string, unknown>; content?: unknown[] };
+    if (n.type === "articleImage" || n.type === "image") {
+      if (!String(n.attrs?.alt ?? "").trim()) missing += 1;
+    }
+    for (const child of n.content ?? []) walk(child);
+  }
+  walk(json);
+  return missing;
 }
 
 function suggestExcerpt(title: string, html: string) {
@@ -110,24 +186,29 @@ function suggestExcerpt(title: string, html: string) {
   return "";
 }
 
-function presetLocal(hoursFromNow: number): string {
+function isoAtRd(year: number, month: number, day: number, hour: number, minute = 0) {
+  const dd = String(day).padStart(2, "0");
+  const mm = String(month).padStart(2, "0");
+  return santoDomingoToIso(`${dd}/${mm}/${year}`, `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`) ?? "";
+}
+
+function presetFromNow(hoursFromNow: number): string {
   const d = new Date(Date.now() + hoursFromNow * 3600_000);
   d.setSeconds(0, 0);
-  return toLocalInputValue(d.toISOString());
+  return d.toISOString();
 }
 
 function tomorrowAt(hour: number, minute = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  d.setHours(hour, minute, 0, 0);
-  return toLocalInputValue(d.toISOString());
+  const p = partsInRd(new Date());
+  const next = new Date(Date.UTC(p.year, p.month - 1, p.day + 1));
+  return isoAtRd(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), hour, minute);
 }
 
 function tonightAt(hour: number): string {
-  const d = new Date();
-  d.setHours(hour, 0, 0, 0);
-  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
-  return toLocalInputValue(d.toISOString());
+  const p = partsInRd(new Date());
+  const candidate = isoAtRd(p.year, p.month, p.day, hour, 0);
+  if (candidate && new Date(candidate).getTime() > Date.now()) return candidate;
+  return tomorrowAt(hour);
 }
 
 export function ArticleEditorForm({
@@ -146,72 +227,126 @@ export function ArticleEditorForm({
   const [error, setError] = useState<string | null>(null);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
+  const [articleId, setArticleId] = useState(initial?.id);
   const [title, setTitle] = useState(initial?.title ?? "");
+  const [slug, setSlug] = useState(initial?.slug ?? "");
   const [excerpt, setExcerpt] = useState(initial?.excerpt ?? "");
   const [contentJson, setContentJson] = useState<object>(initial?.contentJson ?? emptyDoc);
   const [contentHtml, setContentHtml] = useState(initial?.contentHtml ?? "<p></p>");
   const [status, setStatus] = useState<ArticleStatus>(initial?.status ?? "DRAFT");
   const [featured, setFeatured] = useState(initial?.featured ?? false);
   const [heroImageUrl, setHeroImageUrl] = useState(initial?.heroImageUrl ?? "");
+  const [heroAlt, setHeroAlt] = useState(initial?.heroAlt ?? "");
+  const [heroCredit, setHeroCredit] = useState(initial?.heroCredit ?? "");
+  const [heroCaption, setHeroCaption] = useState(initial?.heroCaption ?? "");
+  const [heroFocalX, setHeroFocalX] = useState(initial?.heroFocalX ?? 50);
+  const [heroFocalY, setHeroFocalY] = useState(initial?.heroFocalY ?? 50);
   const [youtubeId, setYoutubeId] = useState(initial?.youtubeId ?? "");
-  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? categories[0]?.id ?? "");
-  const [authorId, setAuthorId] = useState(initial?.authorId ?? authors[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [authorId, setAuthorId] = useState(initial?.authorId ?? "");
   const [tagIds, setTagIds] = useState<string[]>(initial?.tagIds ?? []);
-  const [scheduleLocal, setScheduleLocal] = useState(toLocalInputValue(initial?.scheduledFor ?? null));
+  const [scheduleIso, setScheduleIso] = useState(initial?.scheduledFor ?? "");
+  const [expectedUpdatedAt, setExpectedUpdatedAt] = useState(initial?.updatedAt ?? "");
+  const [revisions] = useState(initial?.revisions ?? []);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewWide, setPreviewWide] = useState(true);
+  const dirtyRef = useRef(false);
+  const skipInitialDirty = useRef(true);
   const canPublish = initial?.canPublish ?? true;
+  const categoryItems = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+  const authorItems = Object.fromEntries(authors.map((a) => [a.id, a.name]));
+  const slugPreview = slug.trim() ? toSlug(slug) : toSlug(title);
+  const words = wordCount(stripHtml(contentHtml));
+  const minutes = readingTimeMinutes(contentHtml);
+  const missingAlts = imagesMissingAlt(contentJson);
 
   const checks = useMemo(() => {
     const body = stripHtml(contentHtml);
     return [
-      { ok: title.trim().length >= 8, label: "Titular claro (8+ caracteres)" },
-      { ok: excerpt.trim().length >= 20, label: "Bajada / lead lista" },
+      { ok: title.trim().length >= 8 && title.trim().length <= 90, label: "Titular (8–90 caracteres)" },
+      { ok: excerpt.trim().length >= 20 && excerpt.trim().length <= 220, label: "Bajada / lead lista" },
       { ok: Boolean(heroImageUrl), label: "Foto de portada" },
-      { ok: body.length >= 40, label: "Cuerpo con contenido" },
+      { ok: words >= 80 || body.length >= 400, label: "Cuerpo con contenido (≈80 palabras)" },
       { ok: Boolean(categoryId && authorId), label: "Categoría y firma" },
     ];
-  }, [title, excerpt, heroImageUrl, contentHtml, categoryId, authorId]);
+  }, [title, excerpt, heroImageUrl, words, contentHtml, categoryId, authorId]);
+
+  const hints = useMemo(
+    () => [
+      { ok: Boolean(!heroImageUrl || heroAlt.trim()), label: "Texto alt de la portada" },
+      { ok: Boolean(!heroImageUrl || heroCredit.trim()), label: "Crédito de la foto" },
+      { ok: missingAlts === 0, label: "Alt en fotos del cuerpo" },
+      { ok: tagIds.length > 0, label: "Al menos una etiqueta" },
+    ],
+    [heroImageUrl, heroAlt, heroCredit, missingAlts, tagIds],
+  );
 
   const readyScore = checks.filter((c) => c.ok).length;
   const readyPct = Math.round((readyScore / checks.length) * 100);
-  const canGoLive = readyScore >= 4;
+  const canGoLive = checks.every((c) => c.ok);
+
+  function markDirty() {
+    dirtyRef.current = true;
+  }
 
   function toggleTag(id: string) {
+    markDirty();
     setTagIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+  }
+
+  function payload(nextStatus: ArticleStatus) {
+    return {
+      id: articleId,
+      title,
+      slug: slugPreview,
+      excerpt,
+      contentJson: contentJson as Prisma.InputJsonValue,
+      contentHtml,
+      status: nextStatus,
+      featured,
+      heroImageUrl: heroImageUrl || null,
+      heroAlt: heroAlt || null,
+      heroCredit: heroCredit || null,
+      heroCaption: heroCaption || null,
+      heroFocalX,
+      heroFocalY,
+      youtubeId: extractYoutubeId(youtubeId) || null,
+      categoryId,
+      authorId,
+      tagIds,
+      scheduledFor: nextStatus === "SCHEDULED" ? scheduleIso || null : null,
+      expectedUpdatedAt: expectedUpdatedAt || undefined,
+    };
   }
 
   function submit(nextStatus: ArticleStatus) {
     setError(null);
     setSavedMsg(null);
 
-    if (nextStatus === "SCHEDULED" && !scheduleLocal) {
+    if (!categoryId || !authorId) {
+      setError("Elige categoría y firma antes de guardar");
+      return;
+    }
+
+    if (nextStatus === "SCHEDULED" && !scheduleIso) {
       setError("Elige fecha y hora para programar");
       return;
     }
 
     startTransition(async () => {
-      const result = await saveArticleAction({
-        id: initial?.id,
-        title,
-        excerpt,
-        contentJson: contentJson as Prisma.InputJsonValue,
-        contentHtml,
-        status: nextStatus,
-        featured,
-        heroImageUrl: heroImageUrl || null,
-        youtubeId: extractYoutubeId(youtubeId) || null,
-        categoryId,
-        authorId,
-        tagIds,
-        scheduledFor: nextStatus === "SCHEDULED" ? fromLocalInputValue(scheduleLocal) : null,
-      });
+      const result = await saveArticleAction(payload(nextStatus));
 
       if (!result.ok) {
         setError(result.error);
         return;
       }
 
+      dirtyRef.current = false;
+      setArticleId(result.id);
+      setSlug(result.slug);
       setStatus(result.status);
-      if (result.scheduledFor) setScheduleLocal(toLocalInputValue(result.scheduledFor));
+      if (result.updatedAt) setExpectedUpdatedAt(result.updatedAt);
+      if (result.scheduledFor) setScheduleIso(result.scheduledFor);
 
       const msg =
         result.status === "PUBLISHED"
@@ -223,12 +358,84 @@ export function ArticleEditorForm({
               : "Borrador guardado.";
 
       setSavedMsg(msg);
-      router.push(`/admin/articulos/${result.id}`);
+      if (!articleId) {
+        router.push(`/admin/articulos/${result.id}`);
+      }
       router.refresh();
     });
   }
 
+  useEffect(() => {
+    if (skipInitialDirty.current) {
+      skipInitialDirty.current = false;
+      return;
+    }
+    dirtyRef.current = true;
+  }, [
+    title,
+    slug,
+    excerpt,
+    contentHtml,
+    featured,
+    heroImageUrl,
+    heroAlt,
+    heroCredit,
+    heroCaption,
+    heroFocalX,
+    heroFocalY,
+    youtubeId,
+    categoryId,
+    authorId,
+    tagIds,
+    scheduleIso,
+  ]);
+
+  useEffect(() => {
+    function onUnload(e: BeforeUnloadEvent) {
+      if (!dirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, []);
+
+  useEffect(() => {
+    if (!articleId) return;
+    if (status === "PUBLISHED" || status === "SCHEDULED") return;
+    const timer = window.setTimeout(() => {
+      if (!dirtyRef.current || !categoryId || !authorId || title.trim().length < 8) return;
+      void saveArticleAction(payload("DRAFT")).then((result) => {
+        if (result.ok) {
+          dirtyRef.current = false;
+          setSavedMsg("Autoguardado");
+        }
+      });
+    }, 20_000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce on editor fields
+  }, [
+    articleId,
+    title,
+    slug,
+    excerpt,
+    contentHtml,
+    featured,
+    heroImageUrl,
+    heroAlt,
+    heroCredit,
+    heroCaption,
+    heroFocalX,
+    heroFocalY,
+    youtubeId,
+    categoryId,
+    authorId,
+    tagIds,
+    status,
+  ]);
+
   return (
+    <>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-5">
         <div className="rounded-2xl border border-[var(--cartel-blue)]/15 bg-gradient-to-br from-[var(--cartel-blue)]/5 via-white to-[var(--cartel-red)]/5 p-4 dark:from-[var(--cartel-blue)]/10 dark:via-card dark:to-[var(--cartel-red)]/10">
@@ -267,6 +474,20 @@ export function ArticleEditorForm({
               placeholder="El titular que verá el lector"
               className="h-auto border-0 bg-transparent px-0 font-heading text-2xl font-black uppercase tracking-tight shadow-none focus-visible:ring-0 sm:text-3xl"
             />
+            <p className="text-[11px] text-muted-foreground">{title.trim().length}/90</p>
+          </div>
+          <div className="mt-3 space-y-1">
+            <Label htmlFor="slug" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Slug / URL
+            </Label>
+            <Input
+              id="slug"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder={toSlug(title) || "url-de-la-noticia"}
+              className="h-9 font-mono text-xs"
+            />
+            <p className="text-[11px] text-muted-foreground">/noticia/{slugPreview || "…"}</p>
           </div>
           <div className="mt-4 space-y-2 border-t border-border/60 pt-4">
             <div className="flex items-center justify-between gap-2">
@@ -291,13 +512,39 @@ export function ArticleEditorForm({
               placeholder="Resumen corto para portada, SEO y redes"
               className="resize-none border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
             />
+            <p className="text-[11px] text-muted-foreground">{excerpt.trim().length}/220</p>
           </div>
         </div>
 
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Cuerpo de la noticia
-          </p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Cuerpo de la noticia
+            </p>
+            <div className="flex items-center gap-2">
+              {Object.entries(TEMPLATES).map(([key, tpl]) => (
+                <Button
+                  key={key}
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => {
+                    setContentJson(tpl.json);
+                    setContentHtml(tpl.html);
+                  }}
+                >
+                  {tpl.label}
+                </Button>
+              ))}
+              <p className="text-[11px] text-muted-foreground">
+                {words} palabras · {minutes} min
+              </p>
+              <Button type="button" variant="outline" size="xs" onClick={() => setPreviewOpen(true)}>
+                <Eye className="h-3.5 w-3.5" />
+                Vista previa
+              </Button>
+            </div>
+          </div>
           <RichTextEditor
             value={contentJson}
             onChange={(json, html) => {
@@ -345,6 +592,18 @@ export function ArticleEditorForm({
                 </li>
               ))}
             </ul>
+            <ul className="space-y-1.5 border-t border-border/60 pt-3">
+              {hints.map((c) => (
+                <li key={c.label} className="flex items-center gap-2 text-[11px]">
+                  {c.ok ? (
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                  ) : (
+                    <Circle className="h-3 w-3 text-muted-foreground" />
+                  )}
+                  <span className={cn(c.ok ? "text-foreground" : "text-muted-foreground")}>{c.label}</span>
+                </li>
+              ))}
+            </ul>
 
             <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2.5">
               <Label htmlFor="featured" className="cursor-pointer text-sm">
@@ -359,31 +618,21 @@ export function ArticleEditorForm({
                   <CalendarClock className="h-4 w-4" />
                   <p className="text-xs font-bold uppercase tracking-wider">Programar salida</p>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="schedule" className="text-xs">
-                    Fecha y hora
-                  </Label>
-                  <Input
-                    id="schedule"
-                    type="datetime-local"
-                    value={scheduleLocal}
-                    onChange={(e) => setScheduleLocal(e.target.value)}
-                    className="bg-background"
-                  />
-                </div>
+                <DatetimeRd id="schedule" valueIso={scheduleIso} onChangeIso={setScheduleIso} />
                 <div className="flex flex-wrap gap-1.5">
-                  <Button type="button" size="xs" variant="outline" onClick={() => setScheduleLocal(presetLocal(1))}>
+                  <Button type="button" size="xs" variant="outline" onClick={() => setScheduleIso(presetFromNow(1))}>
                     +1 h
                   </Button>
-                  <Button type="button" size="xs" variant="outline" onClick={() => setScheduleLocal(tonightAt(20))}>
+                  <Button type="button" size="xs" variant="outline" onClick={() => setScheduleIso(tonightAt(20))}>
                     Hoy 20:00
                   </Button>
-                  <Button type="button" size="xs" variant="outline" onClick={() => setScheduleLocal(tomorrowAt(8))}>
+                  <Button type="button" size="xs" variant="outline" onClick={() => setScheduleIso(tomorrowAt(8))}>
                     Mañana 8:00
                   </Button>
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  Al programar, el sistema la publica solo a esa hora (cron cada 5 min + chequeo al visitar el sitio).
+                  Al programar, el sistema la publica a esa hora. En Vercel Hobby el cron corre 1 vez al día; al visitar
+                  el sitio también se publican las vencidas.
                 </p>
               </div>
             )}
@@ -397,7 +646,7 @@ export function ArticleEditorForm({
               {canPublish ? (
                 <>
                   <Button
-                    disabled={pending || !scheduleLocal || !canGoLive}
+                    disabled={pending || !scheduleIso || !canGoLive}
                     onClick={() => submit("SCHEDULED")}
                     variant="secondary"
                     className="w-full"
@@ -422,7 +671,7 @@ export function ArticleEditorForm({
 
               {!canGoLive && (
                 <p className="text-center text-[11px] text-muted-foreground">
-                  Completa al menos 4 puntos del checklist para publicar o programar.
+                  Completa todos los puntos del checklist, incluida categoría y firma, para publicar o programar.
                 </p>
               )}
             </div>
@@ -439,7 +688,44 @@ export function ArticleEditorForm({
             value={heroImageUrl}
             onChange={setHeroImageUrl}
             onClear={() => setHeroImageUrl("")}
+            focalX={heroFocalX}
+            focalY={heroFocalY}
+            onFocalChange={(x, y) => {
+              setHeroFocalX(x);
+              setHeroFocalY(y);
+            }}
           />
+          {heroImageUrl && (
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="hero-alt">Texto alt</Label>
+                <Input
+                  id="hero-alt"
+                  value={heroAlt}
+                  onChange={(e) => setHeroAlt(e.target.value)}
+                  placeholder="Describe la foto"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="hero-caption">Pie de foto</Label>
+                <Input
+                  id="hero-caption"
+                  value={heroCaption}
+                  onChange={(e) => setHeroCaption(e.target.value)}
+                  placeholder="Opcional"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="hero-credit">Crédito</Label>
+                <Input
+                  id="hero-credit"
+                  value={heroCredit}
+                  onChange={(e) => setHeroCredit(e.target.value)}
+                  placeholder="Fotógrafo o agencia"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>YouTube (URL o ID)</Label>
@@ -468,9 +754,15 @@ export function ArticleEditorForm({
                 .
               </p>
             ) : (
-              <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
-                <SelectTrigger>
-                  <SelectValue />
+              <Select
+                value={categoryId || null}
+                onValueChange={(v) => setCategoryId(v ?? "")}
+                items={categoryItems}
+              >
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="Elige categoría">
+                    {categoryId ? categoryItems[categoryId] : null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
@@ -493,9 +785,15 @@ export function ArticleEditorForm({
                 .
               </p>
             ) : (
-              <Select value={authorId} onValueChange={(v) => v && setAuthorId(v)}>
-                <SelectTrigger>
-                  <SelectValue />
+              <Select
+                value={authorId || null}
+                onValueChange={(v) => setAuthorId(v ?? "")}
+                items={authorItems}
+              >
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="Elige firma">
+                    {authorId ? authorItems[authorId] : null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {authors.map((a) => (
@@ -528,7 +826,72 @@ export function ArticleEditorForm({
             )}
           </div>
         </div>
+        {revisions.length > 0 && (
+          <div className="space-y-2 rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Historial</p>
+            <ul className="space-y-2">
+              {revisions.map((rev) => (
+                <li key={rev.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="text-muted-foreground">
+                    {new Date(rev.createdAt).toLocaleString("es-DO")}
+                    {rev.editorName ? ` · ${rev.editorName}` : ""}
+                  </span>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    onClick={() => {
+                      startTransition(async () => {
+                        const result = await restoreRevisionAction(rev.id);
+                        if (!result.ok) {
+                          setError(result.error);
+                          return;
+                        }
+                        setTitle(result.title);
+                        setExcerpt(result.excerpt);
+                        setContentJson(result.contentJson);
+                        setContentHtml(result.contentHtml);
+                        setSavedMsg("Versión restaurada en el editor. Guarda para aplicarla.");
+                      });
+                    }}
+                  >
+                    Restaurar
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </aside>
     </div>
+    <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Vista previa</DialogTitle>
+        </DialogHeader>
+        <div className="flex gap-2">
+          <Button type="button" size="xs" variant={previewWide ? "default" : "outline"} onClick={() => setPreviewWide(true)}>
+            <Monitor className="h-3.5 w-3.5" />
+            Escritorio
+          </Button>
+          <Button type="button" size="xs" variant={!previewWide ? "default" : "outline"} onClick={() => setPreviewWide(false)}>
+            <Smartphone className="h-3.5 w-3.5" />
+            Móvil
+          </Button>
+        </div>
+        <div className={cn("mx-auto overflow-hidden rounded-xl border border-border bg-background p-4", previewWide ? "max-w-3xl" : "max-w-[390px]")}>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {categories.find((c) => c.id === categoryId)?.name ?? "Sin categoría"}
+          </p>
+          <h2 className="mt-2 font-heading text-2xl font-black uppercase leading-tight sm:text-3xl">{title || "Titular"}</h2>
+          {excerpt ? <p className="mt-3 text-muted-foreground">{excerpt}</p> : null}
+          <p className="mt-2 text-xs text-muted-foreground">{minutes} min de lectura</p>
+          <div className="mt-6">
+            <ArticleBody contentJson={contentJson} contentHtml={contentHtml} youtubeId={extractYoutubeId(youtubeId) || null} />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

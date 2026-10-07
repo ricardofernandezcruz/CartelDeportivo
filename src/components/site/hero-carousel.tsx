@@ -26,7 +26,7 @@ export function HeroCarousel({ slides }: { slides: ArticleCardData[] }) {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--cartel-red)] via-white to-[var(--cartel-blue)]" />
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-10">
         <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.1fr]">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl shadow-md ring-2 ring-[var(--cartel-blue)]/20 lg:aspect-square">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-xl shadow-md ring-2 ring-[var(--cartel-blue)]/20 sm:aspect-[4/3] lg:aspect-square">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.slug}

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import Image from "next/image";
+import { SiteImage } from "@/components/site/site-image";
 import { CalendarClock, Plus } from "lucide-react";
 import { getAdminArticles } from "@/lib/articles";
 import { publishDueArticles } from "@/lib/publish-scheduled";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatRelativeDate } from "@/lib/format";
+import { formatRelativeDate, formatSchedule } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ArticleStatus } from "@prisma/client";
 
@@ -23,13 +23,6 @@ const filters: { key: string; label: string; status?: ArticleStatus }[] = [
   { key: "DRAFT", label: "Borradores", status: "DRAFT" },
   { key: "REVIEW", label: "Revisión", status: "REVIEW" },
 ];
-
-function formatSchedule(date: Date) {
-  return new Intl.DateTimeFormat("es-DO", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 type PageProps = { searchParams: Promise<{ estado?: string }> };
 
@@ -88,13 +81,12 @@ export default async function AdminArticlesPage({ searchParams }: PageProps) {
           >
             <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-24 sm:w-36">
               {article.heroImageUrl ? (
-                <Image
+                <SiteImage
                   src={article.heroImageUrl}
                   alt=""
                   fill
                   className="object-cover transition group-hover:scale-105"
                   sizes="144px"
-                  unoptimized={article.heroImageUrl.startsWith("/")}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Sin foto</div>
