@@ -20,6 +20,12 @@ const CARD_BACKGROUNDS = [
   "bg-[#cfe4f4]",
 ] as const;
 
+/** Crop tightness differs per PNG; zoom so faces share the same visual size. */
+const PORTRAIT_ZOOM: Record<string, string> = {
+  "domingo-hernandez": "scale-[1.16]",
+  "rafael-baldayac": "scale-[1.14]",
+};
+
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -33,11 +39,11 @@ export function OpinionsSection({ items }: { items: ColumnistCardItem[] }) {
   if (!items.length) return null;
 
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-b from-muted/40 via-background to-background">
+    <section className="relative isolate overflow-hidden border-y border-[var(--cartel-blue)]/15 bg-[#e8f1fb]">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
         <div className="mx-auto mb-12 max-w-2xl text-center sm:mb-14">
-          <p className="mb-4 inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-muted-foreground">
-            <span className="border-b border-foreground/30 pb-px">Opiniones</span>
+          <p className="mb-5 inline-flex items-center rounded-full bg-[var(--cartel-blue)] px-6 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-md sm:px-7 sm:py-3 sm:text-base">
+            Opiniones
           </p>
           <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-[2.75rem]">
             Las firmas detrás del Cartel
@@ -58,19 +64,26 @@ export function OpinionsSection({ items }: { items: ColumnistCardItem[] }) {
                 className={cn(
                   "relative aspect-[4/5] overflow-hidden rounded-[1.35rem] rounded-tl-[2.75rem]",
                   "ring-2 ring-transparent transition duration-300",
-                  "group-hover:ring-[#3dba6e] group-hover:ring-offset-2 group-hover:ring-offset-background",
+                  "group-hover:ring-[#3dba6e] group-hover:ring-offset-2 group-hover:ring-offset-[#e8f1fb]",
                   CARD_BACKGROUNDS[i % CARD_BACKGROUNDS.length],
                 )}
               >
                 {item.avatarUrl ? (
-                  <Image
-                    src={item.avatarUrl}
-                    alt={item.name}
-                    fill
-                    sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 280px"
-                    className="object-cover object-[center_12%] grayscale mix-blend-multiply transition-[filter,transform] duration-500 ease-out group-hover:scale-[1.04] group-hover:grayscale-0 group-hover:mix-blend-normal"
-                    unoptimized={item.avatarUrl.startsWith("/")}
-                  />
+                  <div
+                    className={cn(
+                      "absolute inset-x-0 bottom-0 top-10 origin-top sm:top-12",
+                      PORTRAIT_ZOOM[item.slug],
+                    )}
+                  >
+                    <Image
+                      src={item.avatarUrl}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 280px"
+                      className="origin-bottom object-cover object-[center_top] grayscale transition-[filter,transform] duration-500 ease-out group-hover:scale-[1.04] group-hover:grayscale-0"
+                      unoptimized={item.avatarUrl.startsWith("/")}
+                    />
+                  </div>
                 ) : (
                   <span className="flex size-full items-center justify-center font-heading text-4xl font-black text-foreground/30">
                     {initials(item.name)}
@@ -78,7 +91,7 @@ export function OpinionsSection({ items }: { items: ColumnistCardItem[] }) {
                 )}
               </div>
 
-              <div className="absolute inset-x-3 -bottom-1 rounded-2xl border border-border/70 bg-background px-4 py-3 shadow-md transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg">
+              <div className="absolute inset-x-3 -bottom-1 rounded-2xl border border-border/70 bg-white px-4 py-3 shadow-md transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 text-left">
                     <p className="truncate text-sm font-semibold leading-tight text-foreground">

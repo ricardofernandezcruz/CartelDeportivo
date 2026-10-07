@@ -132,7 +132,7 @@ export async function seedDatabase() {
         name: "Rafael Baldayac",
         slug: "rafael-baldayac",
         bio: "Periodista, historiador deportivo y relacionista público. Miembro del CDP, de la ACDS y del staff de prensa de las Águilas Cibaeñas.",
-        avatarUrl: "/brand/columnists/rafael-baldayac.jpg",
+        avatarUrl: "/brand/columnists/rafael-baldayac.png",
       },
     ].map((a) => prisma.author.create({ data: a })),
   );

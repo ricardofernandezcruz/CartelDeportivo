@@ -31,7 +31,7 @@ export const COLUMNISTS = [
     column: "Hechos históricos deportivos",
     role: "Periodista e historiador deportivo",
     bio: "Periodista, historiador deportivo y relacionista público. Miembro del CDP, de la ACDS y del staff de prensa de las Águilas Cibaeñas.",
-    avatarUrl: "/brand/columnists/rafael-baldayac.jpg",
+    avatarUrl: "/brand/columnists/rafael-baldayac.png",
   },
 ] as const;
 
