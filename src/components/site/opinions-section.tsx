@@ -124,9 +124,18 @@ export function OpinionsSection({ items }: { items: ColumnistCardItem[] }) {
                       </span>
                     </Link>
                   ) : (
-                    <p className="mt-2 flex min-h-[2.375rem] w-full min-w-0 items-end justify-center truncate text-sm leading-5 text-muted-foreground">
-                      {item.column}
-                    </p>
+                    <Link
+                      href={`/autor/${item.slug}`}
+                      className="mt-2 flex min-h-[2.375rem] w-full min-w-0 flex-col items-center"
+                    >
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--cartel-blue)]">
+                        Columna
+                      </span>
+                      <span className="mt-0.5 flex h-5 w-full min-w-0 items-center justify-center gap-1 text-sm font-medium text-[var(--cartel-blue)] underline-offset-2 hover:underline">
+                        <span className="min-w-0 truncate">{item.column}</span>
+                        <ArrowUpRight className="size-3.5 shrink-0" aria-hidden />
+                      </span>
+                    </Link>
                   )}
 
                   {item.socials && (
