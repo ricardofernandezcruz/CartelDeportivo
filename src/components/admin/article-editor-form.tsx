@@ -459,43 +459,73 @@ export function ArticleEditorForm({
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Clasificación</p>
           <div className="space-y-2">
             <Label>Categoría</Label>
-            <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {categories.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No hay categorías. Créalas en{" "}
+                <a href="/admin/categorias" className="font-semibold text-[var(--cartel-blue)] hover:underline">
+                  Categorías
+                </a>
+                .
+              </p>
+            ) : (
+              <Select value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Firma</Label>
-            <Select value={authorId} onValueChange={(v) => v && setAuthorId(v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {authors.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {authors.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No hay autores. Créalos en{" "}
+                <a href="/admin/autores" className="font-semibold text-[var(--cartel-blue)] hover:underline">
+                  Autores
+                </a>
+                .
+              </p>
+            ) : (
+              <Select value={authorId} onValueChange={(v) => v && setAuthorId(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {authors.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Etiquetas</Label>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}>
-                  <Badge variant={tagIds.includes(tag.id) ? "default" : "outline"}>{tag.name}</Badge>
-                </button>
-              ))}
-            </div>
+            {tags.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No hay etiquetas. Créalas en{" "}
+                <a href="/admin/etiquetas" className="font-semibold text-[var(--cartel-blue)] hover:underline">
+                  Etiquetas
+                </a>
+                .
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}>
+                    <Badge variant={tagIds.includes(tag.id) ? "default" : "outline"}>{tag.name}</Badge>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </aside>

@@ -59,9 +59,15 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
     };
   }
 
-  const slugBase = toSlug(data.title);
-  let slug = slugBase;
+  const existing = data.id
+    ? await prisma.article.findUnique({
+        where: { id: data.id },
+        select: { slug: true, publishedAt: true, status: true },
+      })
+    : null;
 
+  const slugBase = existing?.slug || toSlug(data.title);
+  let slug = slugBase;
   const existingSlug = await prisma.article.findFirst({
     where: { slug, NOT: data.id ? { id: data.id } : undefined },
   });
@@ -72,7 +78,7 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
 
   const publishedAt =
     data.status === "PUBLISHED"
-      ? new Date()
+      ? existing?.publishedAt ?? new Date()
       : data.status === "SCHEDULED"
         ? null
         : undefined;
@@ -145,4 +151,27 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
     status: article.status,
     scheduledFor: article.scheduledFor?.toISOString() ?? null,
   };
+}
+
+export async function deleteArticleAction(id: string) {
+  const session = await auth();
+  if (!session?.user) return { ok: false as const, error: "No autenticado" };
+
+  const article = await prisma.article.findUnique({
+    where: { id },
+    select: { id: true, slug: true, userId: true },
+  });
+  if (!article) return { ok: false as const, error: "Noticia no encontrada" };
+
+  if (session.user.role === "WRITER" && article.userId !== session.user.id) {
+    return { ok: false as const, error: "Solo puedes borrar tus propias notas" };
+  }
+
+  await prisma.article.delete({ where: { id } });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/articulos");
+  revalidatePath(`/noticia/${article.slug}`);
+  return { ok: true as const };
 }

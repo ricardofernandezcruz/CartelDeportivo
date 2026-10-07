@@ -4,6 +4,7 @@ import { ExternalLink } from "lucide-react";
 import { auth, canPublish } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ArticleEditorForm } from "@/components/admin/article-editor-form";
+import { DeleteArticleButton } from "@/components/admin/delete-article-button";
 import { buttonVariants } from "@/components/ui/button";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -31,16 +32,21 @@ export default async function EditArticlePage({ params }: PageProps) {
           <h1 className="font-heading text-3xl font-black uppercase">Editar noticia</h1>
           <p className="text-sm text-muted-foreground">/{article.slug}</p>
         </div>
-        {article.status === "PUBLISHED" && (
-          <Link
-            href={`/noticia/${article.slug}`}
-            target="_blank"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <ExternalLink className="h-4 w-4" />
-            Ver en el sitio
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {article.status === "PUBLISHED" && (
+            <Link
+              href={`/noticia/${article.slug}`}
+              target="_blank"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Ver en el sitio
+            </Link>
+          )}
+          {session?.user && (
+            <DeleteArticleButton id={article.id} title={article.title} />
+          )}
+        </div>
         {article.status === "SCHEDULED" && article.scheduledFor && (
           <p className="rounded-full bg-[var(--cartel-blue)]/10 px-3 py-1.5 text-xs font-bold text-[var(--cartel-blue)]">
             Programada ·{" "}

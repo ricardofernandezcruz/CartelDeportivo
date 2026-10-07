@@ -10,6 +10,7 @@ import {
   LogOut,
   Newspaper,
   Tags,
+  UserCog,
   Users,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -32,13 +33,20 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/site/theme-toggle";
 import { cn } from "@/lib/utils";
 
-const nav = [
+const nav: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+  adminOnly?: boolean;
+}[] = [
   { href: "/admin", label: "Panel", icon: LayoutDashboard, exact: true },
   { href: "/admin/articulos", label: "Noticias", icon: Newspaper },
   { href: "/admin/articulos/nuevo", label: "Escribir", icon: FileText },
   { href: "/admin/categorias", label: "Categorías", icon: FolderTree },
   { href: "/admin/autores", label: "Autores", icon: Users },
   { href: "/admin/etiquetas", label: "Etiquetas", icon: Tags },
+  { href: "/admin/usuarios", label: "Usuarios", icon: UserCog, adminOnly: true },
 ];
 
 const roleLabel: Record<string, string> = {
@@ -82,6 +90,7 @@ export function AdminShell({
             <SidebarGroupContent>
               <SidebarMenu>
                 {nav.map((item) => {
+                  if (item.adminOnly && userRole !== "ADMIN") return null;
                   const active = item.exact
                     ? pathname === item.href
                     : pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href) && !(item.href === "/admin/articulos" && pathname.startsWith("/admin/articulos/nuevo")));

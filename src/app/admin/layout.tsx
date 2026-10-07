@@ -5,7 +5,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const session = await auth();
 
   return (
-    <AdminShell userName={session?.user?.name ?? "Invitado"} userRole={session?.user?.role ?? "writer"}>
+    <AdminShell userName={session?.user?.name ?? "Invitado"} userRole={session?.user?.role ?? "WRITER"}>
       {children}
     </AdminShell>
   );
