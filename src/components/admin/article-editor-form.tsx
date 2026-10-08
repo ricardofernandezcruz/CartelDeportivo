@@ -484,10 +484,16 @@ export function ArticleEditorForm({
 
         setNotice(nextNotice);
         router.refresh();
-      } catch {
+      } catch (err) {
+        const digest =
+          err && typeof err === "object" && "digest" in err ? String((err as { digest?: unknown }).digest) : "";
+        if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_NOT_FOUND")) {
+          throw err;
+        }
+        console.error(err);
         setNotice({
           tone: "error",
-          message: "No se pudo completar. Revisa la conexión e inténtalo de nuevo.",
+          message: "No se pudo completar. Espera un momento e inténtalo de nuevo.",
         });
       } finally {
         setBusyAction(null);

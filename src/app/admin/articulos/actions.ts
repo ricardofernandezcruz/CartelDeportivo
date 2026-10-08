@@ -6,6 +6,7 @@ import { auth, canPublish } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { toSlug } from "@/lib/slug";
 import { syncArticleToMeili } from "@/lib/search";
+import { reportError } from "@/lib/sentry";
 import { Prisma, type ArticleStatus } from "@prisma/client";
 
 const saveSchema = z.object({
@@ -35,7 +36,36 @@ function stripHtml(html: string) {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function jsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function saveErrorMessage(error: unknown) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") return "Ese slug ya existe. Cambia la URL e inténtalo de nuevo.";
+    if (error.code === "P2003") return "Categoría, autor o etiqueta no válida. Recarga e inténtalo de nuevo.";
+    if (error.code === "P2025") return "La noticia ya no existe. Recarga la página.";
+  }
+  const message = error instanceof Error ? error.message : "";
+  if (
+    error instanceof Prisma.PrismaClientInitializationError ||
+    /timed out|connection pool|can't reach|p1001|p1017/i.test(message)
+  ) {
+    return "La base de datos no responde. Espera unos segundos e inténtalo de nuevo.";
+  }
+  return "No se pudo guardar la noticia. Inténtalo de nuevo.";
+}
+
 export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
+  try {
+    return await saveArticle(input);
+  } catch (error) {
+    await reportError(error, { path: "/admin/articulos", extra: { action: "save" } });
+    return { ok: false as const, error: saveErrorMessage(error) };
+  }
+}
+
+async function saveArticle(input: z.infer<typeof saveSchema>) {
   const session = await auth();
   if (!session?.user) return { ok: false as const, error: "No autenticado" };
 
@@ -52,6 +82,13 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
   ]);
   if (!category) return { ok: false as const, error: "Elige una categoría válida" };
   if (!author) return { ok: false as const, error: "Elige una firma válida" };
+
+  if (data.tagIds.length) {
+    const tags = await prisma.tag.count({ where: { id: { in: data.tagIds } } });
+    if (tags !== data.tagIds.length) {
+      return { ok: false as const, error: "Hay etiquetas inválidas. Recarga la página e inténtalo de nuevo." };
+    }
+  }
 
   if ((data.status === "PUBLISHED" || data.status === "SCHEDULED") && !canPublish(session.user.role)) {
     return { ok: false as const, error: "Tu rol no puede publicar ni programar" };
@@ -115,7 +152,7 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
           title: data.title,
           slug,
           excerpt: data.excerpt,
-          contentJson: data.contentJson as Prisma.InputJsonValue,
+          contentJson: jsonValue(data.contentJson),
           contentHtml: data.contentHtml,
           status: data.status as ArticleStatus,
           featured: data.featured,
@@ -143,7 +180,7 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
           title: data.title,
           slug,
           excerpt: data.excerpt,
-          contentJson: data.contentJson as Prisma.InputJsonValue,
+          contentJson: jsonValue(data.contentJson),
           contentHtml: data.contentHtml,
           status: data.status as ArticleStatus,
           featured: data.featured,
@@ -166,43 +203,47 @@ export async function saveArticleAction(input: z.infer<typeof saveSchema>) {
         include: { category: true },
       });
 
-  if (existing) {
-    await prisma.articleRevision.create({
-      data: {
-        articleId: article.id,
-        title: existing.title,
-        excerpt: existing.excerpt,
-        contentJson: existing.contentJson as Prisma.InputJsonValue,
-        contentHtml: existing.contentHtml,
-        editorName: session.user.name ?? session.user.email ?? null,
-      },
-    });
-    const old = await prisma.articleRevision.findMany({
-      where: { articleId: article.id },
-      orderBy: { createdAt: "desc" },
-      skip: 15,
-      select: { id: true },
-    });
-    if (old.length) {
-      await prisma.articleRevision.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
+  try {
+    if (existing) {
+      await prisma.articleRevision.create({
+        data: {
+          articleId: article.id,
+          title: existing.title,
+          excerpt: existing.excerpt,
+          contentJson: jsonValue(existing.contentJson),
+          contentHtml: existing.contentHtml,
+          editorName: session.user.name ?? session.user.email ?? null,
+        },
+      });
+      const old = await prisma.articleRevision.findMany({
+        where: { articleId: article.id },
+        orderBy: { createdAt: "desc" },
+        skip: 15,
+        select: { id: true },
+      });
+      if (old.length) {
+        await prisma.articleRevision.deleteMany({ where: { id: { in: old.map((r) => r.id) } } });
+      }
     }
-  }
 
-  if (data.status === "PUBLISHED") {
-    const indexed = await prisma.article.findUnique({
-      where: { id: article.id },
-      include: { category: true },
-    });
-    if (indexed) await syncArticleToMeili(indexed);
-  }
+    if (data.status === "PUBLISHED") {
+      const indexed = await prisma.article.findUnique({
+        where: { id: article.id },
+        include: { category: true },
+      });
+      if (indexed) await syncArticleToMeili(indexed);
+    }
 
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidatePath("/admin/articulos");
-  revalidatePath(`/noticia/${article.slug}`);
-  revalidatePath("/rss.xml");
-  revalidatePath("/news-sitemap.xml");
-  revalidatePath("/sitemap.xml");
+    revalidatePath("/");
+    revalidatePath("/admin");
+    revalidatePath("/admin/articulos");
+    revalidatePath(`/noticia/${article.slug}`);
+    revalidatePath("/rss.xml");
+    revalidatePath("/news-sitemap.xml");
+    revalidatePath("/sitemap.xml");
+  } catch (error) {
+    await reportError(error, { path: "/admin/articulos", extra: { action: "save-side-effects", id: article.id } });
+  }
 
   return {
     ok: true as const,
