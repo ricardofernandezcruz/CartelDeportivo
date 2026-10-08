@@ -37,10 +37,24 @@ export const PullQuote = Node.create({
   name: "pullQuote",
   group: "block",
   atom: true,
+  selectable: true,
   addAttributes() {
     return {
-      text: { default: "" },
-      attribution: { default: "" },
+      text: {
+        default: "",
+        parseHTML: (el) =>
+          el.getAttribute("data-text") || el.querySelector("p")?.textContent?.trim() || "",
+        renderHTML: (attrs) => (attrs.text ? { "data-text": String(attrs.text) } : {}),
+      },
+      attribution: {
+        default: "",
+        parseHTML: (el) =>
+          el.getAttribute("data-attribution") ||
+          el.querySelector("cite")?.textContent?.replace(/^[\s—-]+/, "").trim() ||
+          "",
+        renderHTML: (attrs) =>
+          attrs.attribution ? { "data-attribution": String(attrs.attribution) } : {},
+      },
       featured: { default: true },
     };
   },
@@ -48,15 +62,22 @@ export const PullQuote = Node.create({
     return [{ tag: "blockquote[data-pull-quote]" }];
   },
   renderHTML({ HTMLAttributes }) {
-    const { text, attribution } = HTMLAttributes as { text: string; attribution: string };
+    const text = String(HTMLAttributes["data-text"] ?? HTMLAttributes.text ?? "");
+    const attribution = String(HTMLAttributes["data-attribution"] ?? HTMLAttributes.attribution ?? "");
+    const rest = { ...HTMLAttributes } as Record<string, unknown>;
+    delete rest.text;
+    delete rest.attribution;
+    delete rest.featured;
     return [
       "blockquote",
-      mergeAttributes({
+      mergeAttributes(rest, {
         "data-pull-quote": "",
         class: "my-8 rounded-2xl border-l-4 border-[var(--cartel-red)] bg-muted/40 px-6 py-5",
       }),
       ["p", { class: "font-heading text-xl font-bold leading-snug" }, text],
-      attribution ? ["cite", { class: "mt-3 block text-sm not-italic text-muted-foreground" }, attribution] : ["span", {}],
+      attribution
+        ? ["cite", { class: "mt-3 block text-sm not-italic text-muted-foreground" }, attribution]
+        : ["span", {}],
     ];
   },
 });

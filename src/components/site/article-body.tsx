@@ -19,6 +19,59 @@ function textOf(node: JsonNode): string {
   return (node.content ?? []).map(textOf).join("");
 }
 
+function decodeHtml(value: string) {
+  return value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function quotesFromHtml(html: string, pullOnly = false) {
+  const parts: Array<{ text: string; attribution: string }> = [];
+  const re = /<blockquote([^>]*)>([\s\S]*?)<\/blockquote>/gi;
+  for (const match of html.matchAll(re)) {
+    const attrs = match[1] ?? "";
+    const isPull = /data-pull-quote|data-text=/i.test(attrs);
+    if (pullOnly && !isPull) continue;
+    if (!pullOnly && isPull) continue;
+    const inner = match[2] ?? "";
+    const dataText = attrs.match(/data-text="([^"]*)"/i)?.[1];
+    const dataAttr = attrs.match(/data-attribution="([^"]*)"/i)?.[1];
+    const p = inner.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? inner;
+    const cite = inner.match(/<cite[^>]*>([\s\S]*?)<\/cite>/i)?.[1] ?? "";
+    const text = decodeHtml(dataText || p);
+    if (!text) continue;
+    parts.push({
+      text,
+      attribution: decodeHtml(dataAttr || cite).replace(/^[\s—-]+/, ""),
+    });
+  }
+  return parts;
+}
+
+function withQuoteText(nodes: JsonNode[], html?: string) {
+  const pull = html ? quotesFromHtml(html, true) : [];
+  const regular = html ? quotesFromHtml(html, false) : [];
+  let pullIndex = 0;
+  let regularIndex = 0;
+  return nodes.map((node) => {
+    if (node.type !== "pullQuote" && node.type !== "blockquote") return node;
+    const recovered = node.type === "pullQuote" ? pull[pullIndex++] : regular[regularIndex++];
+    const text =
+      String(node.attrs?.text ?? "").trim() || textOf(node).trim() || recovered?.text || "";
+    const attribution =
+      String(node.attrs?.attribution ?? "").trim() || recovered?.attribution || "";
+    if (!text && !attribution) return node;
+    return { ...node, attrs: { ...node.attrs, text, attribution } };
+  });
+}
+
 function renderInline(nodes: JsonNode[] | undefined): ReactNode {
   if (!nodes?.length) return null;
   return nodes.map((n, i) => {
@@ -200,27 +253,34 @@ function Block({ node }: { node: JsonNode }) {
     }
     case "paragraph":
       return <p className="my-4 text-lg leading-relaxed">{renderInline(node.content)}</p>;
-    case "blockquote":
+    case "blockquote": {
+      const quote = String(node.attrs?.text ?? "").trim() || textOf(node).trim();
+      if (!quote) return null;
       return (
         <blockquote className="my-6 border-l-4 border-[var(--cartel-red)] pl-4 text-lg italic">
-          {node.content?.map((c, i) => (
-            <Block key={i} node={c} />
-          ))}
+          {node.content?.length ? (
+            node.content.map((c, i) => <Block key={i} node={c} />)
+          ) : (
+            <p>{quote}</p>
+          )}
         </blockquote>
       );
-    case "pullQuote":
+    }
+    case "pullQuote": {
+      const quote = String(node.attrs?.text ?? "").trim() || textOf(node).trim();
+      const attribution = String(node.attrs?.attribution ?? "").trim();
+      if (!quote) return null;
       return (
         <blockquote className="my-8 rounded-2xl border-l-4 border-[var(--cartel-red)] bg-[var(--cartel-blue)]/5 px-6 py-5">
-          <p className="font-heading text-2xl font-black leading-snug tracking-tight">
-            {String(node.attrs?.text ?? "")}
-          </p>
-          {node.attrs?.attribution ? (
+          <p className="font-heading text-2xl font-black leading-snug tracking-tight">{quote}</p>
+          {attribution ? (
             <cite className="mt-3 block text-sm not-italic font-semibold text-muted-foreground">
-              — {String(node.attrs.attribution)}
+              — {attribution}
             </cite>
           ) : null}
         </blockquote>
       );
+    }
     case "articleImage":
     case "image":
       return <BlockImage attrs={node.attrs} />;
@@ -283,7 +343,7 @@ export function ArticleBody({
   alsoRead?: { slug: string; title: string } | null;
 }) {
   const doc = contentJson as JsonNode | undefined;
-  const nodes = doc?.type === "doc" ? doc.content ?? [] : [];
+  const nodes = withQuoteText(doc?.type === "doc" ? doc.content ?? [] : [], contentHtml);
 
   if (!nodes.length && contentHtml) {
     return (

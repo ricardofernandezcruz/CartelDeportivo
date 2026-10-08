@@ -1,6 +1,7 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
+import type { ReactNodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -37,6 +38,21 @@ import { parseEmbed, embedLabel } from "@/lib/embed";
 import { ArticleImage, ImageGallery, PullQuote, VideoEmbed } from "@/components/admin/article-nodes";
 import { MediaPicker } from "@/components/admin/media-picker";
 
+function PullQuoteView({ node }: ReactNodeViewProps) {
+  const text = String(node.attrs.text ?? "").trim();
+  const attribution = String(node.attrs.attribution ?? "").trim();
+  return (
+    <NodeViewWrapper>
+      <blockquote className="my-6 rounded-2xl border-l-4 border-[var(--cartel-red)] bg-[var(--cartel-blue)]/5 px-6 py-5">
+        <p className="font-heading text-xl font-bold leading-snug">{text || "Cita destacada"}</p>
+        {attribution ? (
+          <cite className="mt-2 block text-sm not-italic text-muted-foreground">— {attribution}</cite>
+        ) : null}
+      </blockquote>
+    </NodeViewWrapper>
+  );
+}
+
 type RichTextEditorProps = {
   value: object;
   onChange: (json: object, html: string) => void;
@@ -66,7 +82,11 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       Image.configure({ HTMLAttributes: { class: "rounded-xl my-5 max-w-full h-auto shadow-sm" } }),
       ArticleImage,
       ImageGallery,
-      PullQuote,
+      PullQuote.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(PullQuoteView);
+        },
+      }),
       VideoEmbed,
       Placeholder.configure({
         placeholder:
