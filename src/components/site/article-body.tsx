@@ -148,10 +148,7 @@ function layout(
   let alsoInserted = !alsoRead;
   const hasVideo = nodes.some((n) => n.type === "videoEmbed");
 
-  let words = 0;
   let mediaIndex = 0;
-  const hasQuote = nodes.some((n) => n.type === "pullQuote" || n.type === "blockquote");
-  let lastQuoteAt = hasQuote ? 0 : -400;
 
   for (const node of nodes) {
     if (node.type === "paragraph" && textOf(node).trim()) paragraphs += 1;
@@ -166,17 +163,6 @@ function layout(
       next = { ...next, attrs: { ...next.attrs, layout: next.attrs?.layout ?? layout } };
     }
     out.push(next);
-    words += textOf(next).trim().split(/\s+/).filter(Boolean).length;
-    if (!hasQuote && words - lastQuoteAt >= 400 && next.type === "paragraph") {
-      const sentence = textOf(next).split(/(?<=[.!?])\s+/)[0]?.trim() ?? "";
-      if (sentence.split(/\s+/).length >= 8) {
-        out.push({
-          type: "pullQuote",
-          attrs: { text: sentence, attribution: "Cartel Deportivo" },
-        });
-        lastQuoteAt = words;
-      }
-    }
     if (!injected && !hasVideo && paragraphs === 2) {
       out.push({
         type: "videoEmbed",

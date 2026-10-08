@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatRelativeDate, formatSchedule } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ArticlesFlash, type ArticlesFlashKind } from "@/components/admin/articles-flash";
 import type { ArticleStatus } from "@prisma/client";
 
 const statusLabel: Record<string, string> = {
@@ -24,12 +25,25 @@ const filters: { key: string; label: string; status?: ArticleStatus }[] = [
   { key: "REVIEW", label: "Revisión", status: "REVIEW" },
 ];
 
-type PageProps = { searchParams: Promise<{ estado?: string }> };
+const FLASH_VALUES = ["publicada", "programada"] as const;
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseFlash(value: string | string[] | undefined): ArticlesFlashKind | null {
+  const raw = firstParam(value);
+  return FLASH_VALUES.includes(raw as ArticlesFlashKind) ? (raw as ArticlesFlashKind) : null;
+}
+
+type PageProps = {
+  searchParams: Promise<{ estado?: string; hecho?: string | string[]; slug?: string | string[]; cuando?: string | string[] }>;
+};
 
 export default async function AdminArticlesPage({ searchParams }: PageProps) {
   await publishDueArticles().catch(() => null);
 
-  const { estado } = await searchParams;
+  const { estado, hecho, slug, cuando } = await searchParams;
   const active = filters.find((f) => f.key === estado) ?? filters[0];
   const articles = await getAdminArticles(active.status);
 
@@ -51,6 +65,13 @@ export default async function AdminArticlesPage({ searchParams }: PageProps) {
           Nueva noticia
         </Link>
       </div>
+
+      <ArticlesFlash
+        hecho={parseFlash(hecho)}
+        slug={firstParam(slug) ?? null}
+        scheduledFor={firstParam(cuando) ?? null}
+        estado={active.key === "all" ? null : active.key}
+      />
 
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => {

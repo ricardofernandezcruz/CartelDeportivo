@@ -70,7 +70,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       VideoEmbed,
       Placeholder.configure({
         placeholder:
-          placeholder ?? "Párrafos, subtítulos, cita destacada, imagen (con crédito) o video pegando el link.",
+          placeholder ?? "Párrafos, subtítulos, cita destacada, imagen o video pegando el link.",
       }),
     ],
     content: value,
@@ -119,7 +119,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
   function confirmImage() {
     if (!editor || !pendingImage) return;
-    if (!imageMeta.alt.trim() || !imageMeta.credit.trim() || !imageMeta.caption.trim()) return;
+    if (!imageMeta.alt.trim() || !imageMeta.caption.trim()) return;
     editor
       .chain()
       .focus()
@@ -212,7 +212,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
     { icon: ListOrdered, action: () => editor.chain().focus().toggleOrderedList().run(), active: editor.isActive("orderedList"), label: "Lista numerada" },
   ] as const;
 
-  const imageReady = Boolean(imageMeta.alt.trim() && imageMeta.credit.trim() && imageMeta.caption.trim());
+  const imageReady = Boolean(imageMeta.alt.trim() && imageMeta.caption.trim());
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-background shadow-sm ring-1 ring-black/5">
@@ -257,7 +257,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           type="button"
           variant="ghost"
           size="icon-sm"
-          title="Imagen (alt, crédito y pie obligatorios)"
+          title="Imagen (alt y pie de foto)"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
         >
@@ -322,7 +322,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
             <DialogTitle>Datos de la imagen</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">Alt, crédito y pie de foto son obligatorios.</p>
+            <p className="text-xs text-muted-foreground">El texto alt y el pie de foto son obligatorios. El crédito es opcional.</p>
             <div className="space-y-1.5">
               <Label htmlFor="img-alt">Texto alternativo</Label>
               <Input
@@ -333,7 +333,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="img-credit">Crédito</Label>
+              <Label htmlFor="img-credit">Crédito (opcional)</Label>
               <Input
                 id="img-credit"
                 value={imageMeta.credit}

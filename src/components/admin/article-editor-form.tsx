@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertCircle,
   CalendarClock,
   CheckCircle2,
   Circle,
   Clock3,
+  ExternalLink,
   Eye,
   Loader2,
   Monitor,
@@ -15,10 +18,11 @@ import {
   Smartphone,
   Sparkles,
   Wand2,
+  X,
 } from "lucide-react";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { ImageUpload } from "@/components/admin/image-upload";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +42,7 @@ import type { ArticleStatus, Prisma } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { SITE_TZ, santoDomingoToIso } from "@/lib/timezone";
 import { toSlug } from "@/lib/slug";
-import { readingTimeMinutes, wordCount, stripHtml as stripHtmlShared } from "@/lib/format";
+import { formatSchedule, readingTimeMinutes, wordCount, stripHtml as stripHtmlShared } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +77,7 @@ export type ArticleEditorInitial = {
   canPublish: boolean;
   updatedAt?: string | null;
   revisions?: Array<{ id: string; createdAt: string; editorName: string | null }>;
+  flash?: "publicada" | "programada" | "guardada" | "revision" | null;
 };
 
 const emptyDoc = {
@@ -211,6 +216,112 @@ function tonightAt(hour: number): string {
   return tomorrowAt(hour);
 }
 
+type EditorNotice =
+  | { tone: "error"; message: string }
+  | { tone: "success"; message: string; status: ArticleStatus; slug?: string }
+  | { tone: "quiet"; message: string };
+
+type FlashKind = NonNullable<ArticleEditorInitial["flash"]>;
+
+function flashToNotice(
+  flash: FlashKind | null | undefined,
+  initial?: Partial<ArticleEditorInitial>,
+): EditorNotice | null {
+  if (!flash) return null;
+  const status: ArticleStatus =
+    flash === "publicada"
+      ? "PUBLISHED"
+      : flash === "programada"
+        ? "SCHEDULED"
+        : flash === "revision"
+          ? "REVIEW"
+          : "DRAFT";
+  return {
+    tone: "success",
+    message: successMessage(status, initial?.scheduledFor),
+    status,
+    slug: initial?.slug,
+  };
+}
+
+function flashFromStatus(status: ArticleStatus): FlashKind {
+  if (status === "PUBLISHED") return "publicada";
+  if (status === "SCHEDULED") return "programada";
+  if (status === "REVIEW") return "revision";
+  return "guardada";
+}
+
+function successMessage(status: ArticleStatus, scheduledFor?: string | null) {
+  if (status === "PUBLISHED") return "Publicada. Ya está en el sitio.";
+  if (status === "SCHEDULED") {
+    if (scheduledFor) {
+      return `Programada. Se publicará el ${formatSchedule(new Date(scheduledFor))}.`;
+    }
+    return "Programada. Se publicará sola a la hora indicada.";
+  }
+  if (status === "REVIEW") return "Enviada a revisión.";
+  return "Borrador guardado.";
+}
+
+function EditorNoticeCard({
+  notice,
+  compact,
+  onDismiss,
+}: {
+  notice: EditorNotice;
+  compact?: boolean;
+  onDismiss: () => void;
+}) {
+  const isError = notice.tone === "error";
+  const isQuiet = notice.tone === "quiet";
+  const publishedSlug = notice.tone === "success" && notice.status === "PUBLISHED" ? notice.slug : undefined;
+
+  return (
+    <div
+      role={isError ? "alert" : "status"}
+      aria-live={isError ? "assertive" : "polite"}
+      className={cn(
+        "flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm shadow-sm",
+        isError
+          ? "border-destructive/30 bg-destructive/10 text-destructive"
+          : isQuiet
+            ? "border-border bg-muted/60 text-muted-foreground"
+            : "border-emerald-500/30 bg-emerald-500/10 font-medium text-emerald-800 dark:text-emerald-300",
+      )}
+    >
+      {isError ? (
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+      ) : (
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className={cn(compact ? "text-xs leading-relaxed" : "leading-relaxed")}>{notice.message}</p>
+        {publishedSlug ? (
+          <Link
+            href={`/noticia/${publishedSlug}`}
+            target="_blank"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "xs" }),
+              "mt-2 border-emerald-600/30 bg-white/60 text-emerald-800 hover:bg-white dark:bg-emerald-950/40 dark:text-emerald-200",
+            )}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Ver en el sitio
+          </Link>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="shrink-0 rounded-md p-0.5 opacity-70 hover:opacity-100"
+        aria-label="Cerrar aviso"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
 export function ArticleEditorForm({
   initial,
   categories,
@@ -224,8 +335,8 @@ export function ArticleEditorForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<ArticleStatus | null>(null);
+  const [notice, setNotice] = useState<EditorNotice | null>(() => flashToNotice(initial?.flash, initial));
 
   const [articleId, setArticleId] = useState(initial?.id);
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -252,6 +363,7 @@ export function ArticleEditorForm({
   const [previewWide, setPreviewWide] = useState(true);
   const dirtyRef = useRef(false);
   const skipInitialDirty = useRef(true);
+  const sidebarNoticeRef = useRef<HTMLDivElement>(null);
   const canPublish = initial?.canPublish ?? true;
   const categoryItems = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   const authorItems = Object.fromEntries(authors.map((a) => [a.id, a.name]));
@@ -274,11 +386,10 @@ export function ArticleEditorForm({
   const hints = useMemo(
     () => [
       { ok: Boolean(!heroImageUrl || heroAlt.trim()), label: "Texto alt de la portada" },
-      { ok: Boolean(!heroImageUrl || heroCredit.trim()), label: "Crédito de la foto" },
       { ok: missingAlts === 0, label: "Alt en fotos del cuerpo" },
       { ok: tagIds.length > 0, label: "Al menos una etiqueta" },
     ],
-    [heroImageUrl, heroAlt, heroCredit, missingAlts, tagIds],
+    [heroImageUrl, heroAlt, missingAlts, tagIds],
   );
 
   const readyScore = checks.filter((c) => c.ok).length;
@@ -320,50 +431,86 @@ export function ArticleEditorForm({
   }
 
   function submit(nextStatus: ArticleStatus) {
-    setError(null);
-    setSavedMsg(null);
-
     if (!categoryId || !authorId) {
-      setError("Elige categoría y firma antes de guardar");
+      setNotice({ tone: "error", message: "Elige categoría y firma antes de guardar." });
       return;
     }
 
     if (nextStatus === "SCHEDULED" && !scheduleIso) {
-      setError("Elige fecha y hora para programar");
+      setNotice({ tone: "error", message: "Elige fecha y hora para programar." });
       return;
     }
 
+    setBusyAction(nextStatus);
+    setNotice(null);
+
     startTransition(async () => {
-      const result = await saveArticleAction(payload(nextStatus));
+      try {
+        const result = await saveArticleAction(payload(nextStatus));
 
-      if (!result.ok) {
-        setError(result.error);
-        return;
+        if (!result.ok) {
+          setNotice({ tone: "error", message: result.error });
+          return;
+        }
+
+        dirtyRef.current = false;
+        setArticleId(result.id);
+        setSlug(result.slug);
+        setStatus(result.status);
+        if (result.updatedAt) setExpectedUpdatedAt(result.updatedAt);
+        if (result.scheduledFor) setScheduleIso(result.scheduledFor);
+
+        if (result.status === "PUBLISHED" || result.status === "SCHEDULED") {
+          const params = new URLSearchParams();
+          params.set("estado", result.status);
+          params.set("hecho", flashFromStatus(result.status));
+          if (result.slug) params.set("slug", result.slug);
+          if (result.scheduledFor) params.set("cuando", result.scheduledFor);
+          router.push(`/admin/articulos?${params.toString()}`);
+          return;
+        }
+
+        const nextNotice: EditorNotice = {
+          tone: "success",
+          message: successMessage(result.status, result.scheduledFor),
+          status: result.status,
+          slug: result.slug,
+        };
+
+        if (!articleId) {
+          router.push(`/admin/articulos/${result.id}?hecho=${flashFromStatus(result.status)}`);
+          return;
+        }
+
+        setNotice(nextNotice);
+        router.refresh();
+      } catch {
+        setNotice({
+          tone: "error",
+          message: "No se pudo completar. Revisa la conexión e inténtalo de nuevo.",
+        });
+      } finally {
+        setBusyAction(null);
       }
-
-      dirtyRef.current = false;
-      setArticleId(result.id);
-      setSlug(result.slug);
-      setStatus(result.status);
-      if (result.updatedAt) setExpectedUpdatedAt(result.updatedAt);
-      if (result.scheduledFor) setScheduleIso(result.scheduledFor);
-
-      const msg =
-        result.status === "PUBLISHED"
-          ? "Publicada. Ya está en el sitio."
-          : result.status === "SCHEDULED"
-            ? "Programada. Se publicará sola a la hora indicada."
-            : result.status === "REVIEW"
-              ? "Enviada a revisión."
-              : "Borrador guardado.";
-
-      setSavedMsg(msg);
-      if (!articleId) {
-        router.push(`/admin/articulos/${result.id}`);
-      }
-      router.refresh();
     });
   }
+
+  useEffect(() => {
+    if (!initial?.flash || !initial.id) return;
+    router.replace(`/admin/articulos/${initial.id}`, { scroll: false });
+  }, [initial?.flash, initial?.id, router]);
+
+  useEffect(() => {
+    if (!notice || notice.tone === "error") return;
+    const ms = notice.tone === "quiet" ? 4000 : 9000;
+    const timer = window.setTimeout(() => setNotice(null), ms);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    if (!notice || notice.tone === "quiet") return;
+    sidebarNoticeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [notice]);
 
   useEffect(() => {
     if (skipInitialDirty.current) {
@@ -408,7 +555,10 @@ export function ArticleEditorForm({
       void saveArticleAction(payload("DRAFT")).then((result) => {
         if (result.ok) {
           dirtyRef.current = false;
-          setSavedMsg("Autoguardado");
+          if (result.updatedAt) setExpectedUpdatedAt(result.updatedAt);
+          setNotice((current) =>
+            current && current.tone !== "quiet" ? current : { tone: "quiet", message: "Autoguardado" },
+          );
         }
       });
     }, 20_000);
@@ -436,6 +586,13 @@ export function ArticleEditorForm({
 
   return (
     <>
+    {notice && notice.tone !== "quiet" ? (
+      <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center px-4 sm:justify-end sm:px-6">
+        <div className="pointer-events-auto w-full max-w-md shadow-lg">
+          <EditorNoticeCard notice={notice} onDismiss={() => setNotice(null)} />
+        </div>
+      </div>
+    ) : null}
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-5">
         <div className="rounded-2xl border border-[var(--cartel-blue)]/15 bg-gradient-to-br from-[var(--cartel-blue)]/5 via-white to-[var(--cartel-red)]/5 p-4 dark:from-[var(--cartel-blue)]/10 dark:via-card dark:to-[var(--cartel-red)]/10">
@@ -554,27 +711,26 @@ export function ArticleEditorForm({
           />
         </div>
 
-        {error && (
-          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-        {savedMsg && (
-          <p className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-            <CheckCircle2 className="h-4 w-4" /> {savedMsg}
-          </p>
-        )}
       </div>
 
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <div className="bg-gradient-to-r from-[var(--cartel-red)] to-[var(--cartel-blue)] px-4 py-3">
+          <div
+            className={cn(
+              "px-4 py-3",
+              status === "PUBLISHED"
+                ? "bg-emerald-600"
+                : status === "SCHEDULED"
+                  ? "bg-violet-600"
+                  : "bg-gradient-to-r from-[var(--cartel-red)] to-[var(--cartel-blue)]",
+            )}
+          >
             <p className="text-xs font-bold uppercase tracking-widest text-white/90">Publicación</p>
-            <p className="mt-0.5 text-[11px] text-white/75">
+            <p className="mt-0.5 text-sm font-semibold text-white">
               {status === "SCHEDULED"
                 ? "Programada — sale sola"
                 : status === "PUBLISHED"
-                  ? "En el sitio"
+                  ? "Publicada — en el sitio"
                   : "Aún no pública"}
             </p>
           </div>
@@ -638,9 +794,15 @@ export function ArticleEditorForm({
             )}
 
             <div className="flex flex-col gap-2 pt-1">
+              {notice ? (
+                <div ref={sidebarNoticeRef}>
+                  <EditorNoticeCard notice={notice} compact onDismiss={() => setNotice(null)} />
+                </div>
+              ) : null}
+
               <Button disabled={pending} onClick={() => submit("DRAFT")} variant="outline" className="w-full">
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Guardar borrador
+                {busyAction === "DRAFT" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {busyAction === "DRAFT" ? "Guardando…" : "Guardar borrador"}
               </Button>
 
               {canPublish ? (
@@ -651,21 +813,30 @@ export function ArticleEditorForm({
                     variant="secondary"
                     className="w-full"
                   >
-                    {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}
-                    Programar publicación
+                    {busyAction === "SCHEDULED" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Clock3 className="h-4 w-4" />
+                    )}
+                    {busyAction === "SCHEDULED" ? "Programando…" : "Programar publicación"}
                   </Button>
                   <Button
                     disabled={pending || !canGoLive}
                     onClick={() => submit("PUBLISHED")}
                     className="w-full bg-[var(--cartel-red)] hover:bg-[var(--cartel-red)]/90"
                   >
-                    {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Publicar ahora
+                    {busyAction === "PUBLISHED" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    {busyAction === "PUBLISHED" ? "Publicando…" : "Publicar ahora"}
                   </Button>
                 </>
               ) : (
                 <Button disabled={pending || !canGoLive} onClick={() => submit("REVIEW")} className="w-full">
-                  Enviar a revisión
+                  {busyAction === "REVIEW" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {busyAction === "REVIEW" ? "Enviando…" : "Enviar a revisión"}
                 </Button>
               )}
 
@@ -716,7 +887,7 @@ export function ArticleEditorForm({
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="hero-credit">Crédito</Label>
+                <Label htmlFor="hero-credit">Crédito (opcional)</Label>
                 <Input
                   id="hero-credit"
                   value={heroCredit}
@@ -844,14 +1015,17 @@ export function ArticleEditorForm({
                       startTransition(async () => {
                         const result = await restoreRevisionAction(rev.id);
                         if (!result.ok) {
-                          setError(result.error);
+                          setNotice({ tone: "error", message: result.error });
                           return;
                         }
                         setTitle(result.title);
                         setExcerpt(result.excerpt);
                         setContentJson(result.contentJson);
                         setContentHtml(result.contentHtml);
-                        setSavedMsg("Versión restaurada en el editor. Guarda para aplicarla.");
+                        setNotice({
+                          tone: "quiet",
+                          message: "Versión restaurada en el editor. Guarda para aplicarla.",
+                        });
                       });
                     }}
                   >

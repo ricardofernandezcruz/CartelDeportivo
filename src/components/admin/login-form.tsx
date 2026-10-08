@@ -31,7 +31,9 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Correo</Label>
+        <Label htmlFor="email" className="sr-only">
+          Correo
+        </Label>
         <Input
           id="email"
           name="email"
@@ -39,11 +41,15 @@ export function LoginForm() {
           autoComplete="username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="Correo electrónico*"
+          className="h-11 rounded-xl bg-white"
           required
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
+        <Label htmlFor="password" className="sr-only">
+          Contraseña
+        </Label>
         <Input
           id="password"
           name="password"
@@ -51,12 +57,19 @@ export function LoginForm() {
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          placeholder="Contraseña*"
+          className="h-11 rounded-xl bg-white"
           required
         />
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Entrar al panel"}
+      {error && <p className="text-sm text-[var(--cartel-red)]">{error}</p>}
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending}
+        className="h-11 w-full rounded-xl bg-[var(--cartel-red)] text-sm font-semibold text-white hover:bg-[var(--cartel-red)]/90"
+      >
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Entrar"}
       </Button>
     </form>
   );

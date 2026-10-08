@@ -8,10 +8,22 @@ import { ArticleEditorForm } from "@/components/admin/article-editor-form";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
 import { buttonVariants } from "@/components/ui/button";
 
-type PageProps = { params: Promise<{ id: string }> };
+const FLASH_VALUES = ["publicada", "programada", "guardada", "revision"] as const;
+type FlashKind = (typeof FLASH_VALUES)[number];
 
-export default async function EditArticlePage({ params }: PageProps) {
+function parseFlash(value: string | string[] | undefined): FlashKind | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return FLASH_VALUES.includes(raw as FlashKind) ? (raw as FlashKind) : null;
+}
+
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ hecho?: string | string[] }>;
+};
+
+export default async function EditArticlePage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const query = await searchParams;
   const session = await auth();
 
   const [article, categories, authors, tags] = await Promise.all([
@@ -84,6 +96,7 @@ export default async function EditArticlePage({ params }: PageProps) {
           scheduledFor: article.scheduledFor?.toISOString() ?? null,
           canPublish: session?.user ? canPublish(session.user.role) : false,
           updatedAt: article.updatedAt.toISOString(),
+          flash: parseFlash(query.hecho),
           revisions: article.revisions.map((r) => ({
             id: r.id,
             createdAt: r.createdAt.toISOString(),
