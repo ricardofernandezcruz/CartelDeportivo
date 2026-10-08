@@ -126,26 +126,43 @@ export const VideoEmbed = Node.create({
   name: "videoEmbed",
   group: "block",
   atom: true,
+  selectable: true,
   addAttributes() {
     return {
-      url: { default: "" },
-      provider: { default: "youtube" },
-      embedId: { default: "" },
+      url: {
+        default: "",
+        parseHTML: (el) =>
+          el.getAttribute("data-url") || el.querySelector("a")?.getAttribute("href") || "",
+        renderHTML: (attrs) => (attrs.url ? { "data-url": String(attrs.url) } : {}),
+      },
+      provider: {
+        default: "youtube",
+        parseHTML: (el) => el.getAttribute("data-provider") || "youtube",
+        renderHTML: (attrs) => ({ "data-provider": String(attrs.provider || "youtube") }),
+      },
+      embedId: {
+        default: "",
+        parseHTML: (el) => el.getAttribute("data-embed-id") || "",
+        renderHTML: (attrs) => (attrs.embedId ? { "data-embed-id": String(attrs.embedId) } : {}),
+      },
     };
   },
   parseHTML() {
     return [{ tag: "div[data-video-embed]" }];
   },
   renderHTML({ HTMLAttributes }) {
-    const { url, provider } = HTMLAttributes as { url: string; provider: string };
+    const url = String(HTMLAttributes["data-url"] ?? HTMLAttributes.url ?? "");
+    const rest = { ...HTMLAttributes } as Record<string, unknown>;
+    delete rest.url;
+    delete rest.provider;
+    delete rest.embedId;
     return [
       "div",
-      mergeAttributes({
+      mergeAttributes(rest, {
         "data-video-embed": "",
-        "data-provider": provider,
         class: "my-6 rounded-xl border border-border bg-muted/30 p-3 text-sm",
       }),
-      ["a", { href: url, target: "_blank", rel: "noreferrer" }, url || "Video"],
+      ["a", { href: url || "#", target: "_blank", rel: "noreferrer" }, url || "Video"],
     ];
   },
 });

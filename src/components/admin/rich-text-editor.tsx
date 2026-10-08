@@ -53,6 +53,35 @@ function PullQuoteView({ node }: ReactNodeViewProps) {
   );
 }
 
+function VideoEmbedView({ node }: ReactNodeViewProps) {
+  const parsed = parseEmbed(String(node.attrs.embedId ?? "") || String(node.attrs.url ?? ""));
+  const label = parsed ? embedLabel(parsed.provider) : "Video";
+  return (
+    <NodeViewWrapper>
+      <div className="my-4 overflow-hidden rounded-xl border border-border bg-muted/40">
+        {parsed?.provider === "youtube" && parsed.id ? (
+          <div className="relative aspect-video bg-black">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://i.ytimg.com/vi/${parsed.id}/hqdefault.jpg`}
+              alt=""
+              className="h-full w-full object-cover opacity-90"
+            />
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold uppercase tracking-wider text-white">
+              {label}
+            </span>
+          </div>
+        ) : (
+          <p className="px-4 py-3 text-sm">
+            {label}
+            {parsed?.url ? `: ${parsed.url}` : ""}
+          </p>
+        )}
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
 type RichTextEditorProps = {
   value: object;
   onChange: (json: object, html: string) => void;
@@ -87,7 +116,11 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           return ReactNodeViewRenderer(PullQuoteView);
         },
       }),
-      VideoEmbed,
+      VideoEmbed.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(VideoEmbedView);
+        },
+      }),
       Placeholder.configure({
         placeholder:
           placeholder ?? "Párrafos, subtítulos, cita destacada, imagen o video pegando el link.",

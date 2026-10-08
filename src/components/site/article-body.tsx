@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { YoutubeEmbed } from "@/components/site/youtube-embed";
 import { SiteImage } from "@/components/site/site-image";
-import { embedSrc, type EmbedProvider } from "@/lib/embed";
+import { embedSrc, parseEmbed, type EmbedProvider } from "@/lib/embed";
 import { publicImageUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
@@ -94,6 +94,64 @@ function renderInline(nodes: JsonNode[] | undefined): ReactNode {
   });
 }
 
+function videosFromHtml(html: string) {
+  const parts: Array<{ url: string; provider: string; embedId: string }> = [];
+  const re = /<div([^>]*data-video-embed[^>]*)>([\s\S]*?)<\/div>/gi;
+  for (const match of html.matchAll(re)) {
+    const attrs = match[1] ?? "";
+    const inner = match[2] ?? "";
+    const url =
+      attrs.match(/data-url="([^"]*)"/i)?.[1] ||
+      inner.match(/href="([^"]+)"/i)?.[1] ||
+      "";
+    const embedId = attrs.match(/data-embed-id="([^"]*)"/i)?.[1] || "";
+    const provider = attrs.match(/data-provider="([^"]*)"/i)?.[1] || "";
+    const parsed = parseEmbed(embedId || decodeHtml(url));
+    if (!parsed && !url && !embedId) continue;
+    parts.push({
+      url: parsed?.url || decodeHtml(url),
+      provider: parsed?.provider || provider || "youtube",
+      embedId: parsed?.id || embedId,
+    });
+  }
+  return parts;
+}
+
+function videoAttrs(node: JsonNode, fallback?: { url: string; provider: string; embedId: string } | null) {
+  const url = String(node.attrs?.url ?? "").trim() || fallback?.url || "";
+  const embedId = String(node.attrs?.embedId ?? "").trim() || fallback?.embedId || "";
+  const parsed = parseEmbed(embedId || url);
+  return {
+    url: parsed?.url || url,
+    provider: parsed?.provider || String(node.attrs?.provider ?? fallback?.provider ?? "youtube"),
+    embedId: parsed?.id || embedId,
+  };
+}
+
+function withMediaAttrs(nodes: JsonNode[], html?: string, youtubeId?: string | null) {
+  const quoted = withQuoteText(nodes, html);
+  const fromHtml = html ? videosFromHtml(html) : [];
+  let videoIndex = 0;
+  const sidebar = youtubeId ? parseEmbed(youtubeId) : null;
+  let usedSidebar = false;
+  return quoted.map((node) => {
+    if (node.type !== "videoEmbed") return node;
+    const recovered = fromHtml[videoIndex++];
+    let next = videoAttrs(node, recovered);
+    if (!next.embedId && sidebar && !usedSidebar) {
+      next = { url: sidebar.url, provider: sidebar.provider, embedId: sidebar.id };
+      usedSidebar = true;
+    }
+    return { ...node, attrs: { ...node.attrs, ...next } };
+  });
+}
+
+function isRenderableVideo(node: JsonNode) {
+  if (node.type !== "videoEmbed") return false;
+  const v = videoAttrs(node);
+  return Boolean(v.embedId || v.url);
+}
+
 function isMedia(node: JsonNode) {
   return node.type === "articleImage" || node.type === "videoEmbed" || node.type === "image" || node.type === "imageGallery";
 }
@@ -164,14 +222,14 @@ function BlockGallery({ attrs }: { attrs?: Record<string, unknown> }) {
 }
 
 function BlockVideo({ attrs }: { attrs?: Record<string, unknown> }) {
-  const provider = String(attrs?.provider ?? "youtube") as EmbedProvider;
-  const id = String(attrs?.embedId ?? "");
-  const url = String(attrs?.url ?? "");
+  const parsed = parseEmbed(String(attrs?.embedId ?? "").trim() || String(attrs?.url ?? "").trim());
+  const provider = (parsed?.provider ?? String(attrs?.provider ?? "youtube")) as EmbedProvider;
+  const id = parsed?.id || String(attrs?.embedId ?? "").trim();
+  const url = parsed?.url || String(attrs?.url ?? "").trim();
   if (provider === "youtube" && id) {
     return <YoutubeEmbed videoId={id} />;
   }
-  const parsed = { provider, id, url };
-  const src = id ? embedSrc(parsed) : "";
+  const src = id ? embedSrc({ provider, id, url: url || parsed?.url || "" }) : "";
   if (!src) {
     return url ? (
       <p className="my-6">
@@ -199,7 +257,7 @@ function layout(
   let paragraphs = 0;
   let injected = !injectedYoutubeId;
   let alsoInserted = !alsoRead;
-  const hasVideo = nodes.some((n) => n.type === "videoEmbed");
+  const hasVideo = nodes.some(isRenderableVideo);
 
   let mediaIndex = 0;
 
@@ -343,7 +401,7 @@ export function ArticleBody({
   alsoRead?: { slug: string; title: string } | null;
 }) {
   const doc = contentJson as JsonNode | undefined;
-  const nodes = withQuoteText(doc?.type === "doc" ? doc.content ?? [] : [], contentHtml);
+  const nodes = withMediaAttrs(doc?.type === "doc" ? doc.content ?? [] : [], contentHtml, youtubeId);
 
   if (!nodes.length && contentHtml) {
     return (
